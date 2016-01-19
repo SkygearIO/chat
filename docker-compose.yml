@@ -1,0 +1,53 @@
+# docker-compose.yml for Skygear Getting Started Guide
+
+# The volume container for database
+# This container provides persistent storage for the `db` container. To
+# remove this storage, run `docker-compose rm db_data`.
+db_data:
+  image: mdillon/postgis:9.4
+  command: /bin/true
+
+# The database container
+db:
+  image: mdillon/postgis:9.4
+  volumes_from:
+  - db_data
+  ports:
+  - "5433:5432"
+
+# The volume container for skygear
+# This container provides persistent storage for the `app` container. To
+# remove this storage, run `docker-compose rm app_data`.
+app_data:
+  image: oursky/skygear:latest
+  command: /bin/true
+
+# The Skygear container
+app:
+  image: oursky/skygear:latest
+  ports:
+  - "3001:3000" # Skygear API Endpoint (HTTP)
+  - "5556:5555" # Skygear Plugin Endpoint (ZMQ)
+  volumes:
+  - ./development.ini:/go/src/app/development.ini
+  volumes_from:
+  # Uncomment the following line to override the default configuration file.
+  # Put the configuration file in the same directory with this file and call it
+  # `development.ini`.
+  # The default configuration file can be obtained from
+  # https://github.com/oursky/skygear/blob/master/development.ini.
+  - app_data
+  links:
+  - db
+  command: skygear development.ini
+  environment:
+    # `db` in the following string should match the name of the database
+    # container above.
+    DATABASE_URL: postgresql://postgres:@db/postgres?sslmode=disable
+    DB_IMPL_NAME: pq
+    API_KEY: my_skygear_key
+    APP_NAME: my_skygear_app
+    # GOMAXPROCS - The maximum number of Go threads for execution.
+    # When unspecified, the default is the number of CPU available, which
+    # is the recommended setting.
+    #GOMAXPROCS: 1
