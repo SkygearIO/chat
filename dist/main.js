@@ -19,33 +19,29 @@ container.getChatUser = function() {
     if (records.length > 0) {
       return records[0];
     }
-
   }).then(function(record) {
-      if (record === null) {
-        const user = new ChatUser();
-        return this._skygear.publicDB.save(user);
-      } else {
-        return record;
-      }
+    if (record === null) {
+      const user = new ChatUser();
+      return this._skygear.publicDB.save(user);
+    }
+    return record;
   });
 };
 
 container.createConversation = function(
-                          participant_ids, 
-                          is_direct_message, 
-                          distinct, 
-                          title, 
+                          participant_ids,
+                          is_direct_message,
+                          distinct,
+                          title,
                           metadata) {
-
   const query = new this._skygear.Query(ChatUser);
   query.contains('_owner_id', participant_ids);
 
   return this._skygear.publicDB.query(query).then(function(records) {
     if (records.length > 0) {
       return records;
-    } else {
-      throw new Error('no user found');
     }
+    throw new Error('no user found');
   }).then(function(participants) {
     const conversation = new Conversation();
     conversation.is_direct_message = is_direct_message;
@@ -60,4 +56,4 @@ container.createConversation = function(
   });
 };
 
-module.exports = container
+module.exports = container;
