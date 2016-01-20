@@ -1,6 +1,7 @@
 'use strict';
 
 const skygear = require('skygear');
+const _ = require('underscore');
 skygear.endPoint = 'http://localhost:3001/';
 skygear.configApiKey('my_skygear_key');
 
@@ -34,23 +35,12 @@ container.createConversation = function(
                           distinct,
                           title,
                           metadata) {
-  const _this = this;
-  const query = new _this._skygear.Query(ChatUser);
-  query.contains('_owner_id', participant_ids);
-
-  return _this._skygear.publicDB.query(query).then(function(records) {
-    if (records.length > 0) {
-      return records;
-    }
-    throw new Error('no user found');
-  }).then(function(participants) {
-    const conversation = new Conversation();
-    conversation.is_direct_message = is_direct_message;
-    conversation.title = title;
-    conversation.metadata = metadata;
-    conversation.participant_ids = participant_ids;
-    return _this._skygear.publicDB.save(conversation);
-  });
+  const conversation = new Conversation();
+  conversation.is_direct_message = is_direct_message;
+  conversation.title = title;
+  conversation.metadata = metadata;
+  conversation.participant_ids = _.unique(participant_ids);
+  return this._skygear.publicDB.save(conversation);
 };
 
 container.getConversation = function(conversation_id) {
@@ -67,7 +57,7 @@ container.getConversation = function(conversation_id) {
 container.getConversations = function() {
   const query = this._skygear.Query(Conversation);
   query.containsValue('participant_ids', this._skygear.currentUser.id);
-  return this._skygear.publicDB.query(query)
+  return this._skygear.publicDB.query(query);
 };
 
 container.deleteConversation = function(conversation_id) {
@@ -75,6 +65,41 @@ container.deleteConversation = function(conversation_id) {
   return _this.getConversation(conversation_id).then(function(conversation) {
     return _this._skygear.publicDB.del(conversation);
   });
-}
+};
+
+container.editConversation = function(conversation_id, changes) {
+  const _this = this;
+  return _this.getConversation(conversation_id).then(function(conversation) {
+    if (changes.title !== undefined) {
+      conversation.title = changes.title;
+    }
+
+    if (changes.metadata !== undefined) {
+      conversation.metadata = changes.metadata;
+    }
+
+    return _this._skygear.publicDB.save(conversation);
+  });
+};
+
+container.addParticipants = function(conversation_id, participant_ids) {
+  const _this = this;
+  return _this.getConversation(conversation_id).then(function(conversation) {
+    conversation.participant_ids = _.union(
+        conversation.participant_ids, participant_ids);
+
+    return _this._skygear.publicDB.save(conversation);
+  });
+};
+
+container.removeParticipants = function(conversation_id, participant_ids) {
+  const _this = this;
+  return _this.getConversation(conversation_id).then(function(conversation) {
+    conversation.participant_ids = _.difference(
+        _.unique(conversation.participant_ids), participant_ids);
+
+    return _this._skygear.publicDB.save(conversation);
+  });
+};
 
 module.exports = container;
