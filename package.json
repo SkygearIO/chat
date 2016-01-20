@@ -1,0 +1,25 @@
+{
+  "name": "skygear_chat",
+  "version": "1.0.0",
+  "description": "skygear chat sdk",
+  "main": "main.js",
+  "dependencies": {
+    "localStorage": "^1.0.3",
+    "skygear": "^0.3.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/lampercy/skygear-chat.git"
+  },
+  "keywords": [
+    "skygear",
+    "chat"
+  ],
+  "author": "Percy Lam",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/lampercy/skygear-chat#readme"
+}
