@@ -1,3 +1,7 @@
 /node_modules
 .vagrant
 /__pycache__
+*.ipynb
+supervisord.*
+/.ipynb_checkpoints
+*.log
