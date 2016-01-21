@@ -2,6 +2,7 @@
     "extends": "google",
     "rules": {
       "camelcase": [0, {"properties": "never"}],
-      "new-cap": [0]
+      "new-cap": [0],
+      "spaced-comment": [1]
     }
 }
