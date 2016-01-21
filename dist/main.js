@@ -31,6 +31,7 @@ container.getChatUser = function() {
 
 container.createConversation = function(
                           participant_ids,
+                          admin_ids,
                           is_direct_message,
                           distinct,
                           title,
@@ -40,6 +41,7 @@ container.createConversation = function(
   conversation.title = title;
   conversation.metadata = metadata;
   conversation.participant_ids = _.unique(participant_ids);
+  conversation.admin_ids = _.unique(admin_ids);
   return this._skygear.publicDB.save(conversation);
 };
 
@@ -97,6 +99,26 @@ container.removeParticipants = function(conversation_id, participant_ids) {
   return _this.getConversation(conversation_id).then(function(conversation) {
     conversation.participant_ids = _.difference(
         _.unique(conversation.participant_ids), participant_ids);
+
+    return _this._skygear.publicDB.save(conversation);
+  });
+};
+
+container.addAdmins = function(conversation_id, admin_ids) {
+  const _this = this;
+  return _this.getConversation(conversation_id).then(function(conversation) {
+    conversation.admin_ids = _.union(
+        conversation.admin_ids, admin_ids);
+
+    return _this._skygear.publicDB.save(conversation);
+  });
+};
+
+container.removeAdmins = function(conversation_id, admin_ids) {
+  const _this = this;
+  return _this.getConversation(conversation_id).then(function(conversation) {
+    conversation.admin_ids = _.difference(
+        _.unique(conversation.admin_ids), admin_ids);
 
     return _this._skygear.publicDB.save(conversation);
   });
