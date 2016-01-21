@@ -7,6 +7,7 @@ skygear.configApiKey('my_skygear_key');
 
 const Conversation = skygear.Record.extend('conversation');
 const ChatUser = skygear.Record.extend('chat_user');
+const Message = skygear.Record.extend('message');
 
 const container = function() {};
 
@@ -122,6 +123,13 @@ container.removeAdmins = function(conversation_id, admin_ids) {
 
     return _this._skygear.publicDB.save(conversation);
   });
+};
+
+container.createMessage = function(conversation_id, body) {
+  const message = new Message();
+  message.conversation_id = conversation_id;
+  message.body = body;
+  return this._skygear.privateDB.save(message);
 };
 
 module.exports = container;
