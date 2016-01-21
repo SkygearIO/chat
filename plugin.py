@@ -1,6 +1,7 @@
 import skygear
 from skygear.container import SkygearContainer
 from skygear.utils.context import current_user_id
+from skygear.utils import db
 
 
 container = SkygearContainer()
@@ -28,6 +29,48 @@ def handle_conversation_before_delete(record, db):
     if current_user_id() not in record['admin_ids']:
         raise Exception("no permission to delete conversation")
 
+
+@skygear.before_save("message", async=False)
+def handle_message_before_save(new_record, old_record, db):
+    conversation = _get_conversation(new_record['conversation_id'])
+
+    if current_user_id() not in conversation['participant_ids']:
+        raise Exception("user not in conversation")
+
+    if old_record is not None:
+        raise Exception("message is not editable")
+
+
+@skygear.op("chat:get_messages", auth_required=True, user_required=True)
+def get_messages(conversation_id, limit):
+    conversation = _get_conversation(conversation_id)
+
+    if current_user_id() not in conversation['participant_ids']:
+        raise Exception("user not in conversation")
+
+    with db.conn() as conn:
+        cur = conn.execute('''
+            SELECT _id, _created_at, _created_by, body, conversation_id
+            FROM app_my_skygear_app.message
+            WHERE conversation_id = %s
+            ORDER BY _created_at DESC
+            LIMIT %s;
+            ''', (conversation_id, limit)
+        )
+
+        results = []
+        for row in cur:
+            results.append({
+                '_id': row[0],
+                '_created_at': row[1].isoformat(),
+                'created_by': row[2],
+                'body': row[3],
+                'conversation_id': row[4]
+            })
+
+        return {'results': results}
+
+
 def _get_conversation(conversation_id):
     data = {
         'database_id': '_public',
@@ -53,13 +96,3 @@ def _get_conversation(conversation_id):
         raise Exception("no conversation found")
 
     return response['result'][0]
-
-@skygear.before_save("message", async=False)
-def handle_message_before_save(new_record, old_record, db):
-    conversation = _get_conversation(new_record['conversation_id'])
-
-    if current_user_id() not in conversation['participant_ids']:
-        raise Exception("user not in conversation")
-
-    if old_record is not None:
-        raise Exception("message is not editable")
