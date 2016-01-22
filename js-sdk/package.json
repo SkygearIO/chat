@@ -15,10 +15,12 @@
     "mocha": "^2.3.4",
     "sinon": "^1.17.2",
     "nock": "^5.2.1",
-    "uuid": "^2.0.1"
+    "uuid": "^2.0.1",
+    "browserify": "^13.0.0"
   },
   "scripts": {
-    "test": "eslint dist test && mocha"
+    "test": "eslint dist test && mocha",
+    "browserify": "browserify dist/main.js -o bundle.js -i react-native"
   },
   "repository": {
     "type": "git",
