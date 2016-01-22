@@ -161,7 +161,7 @@ container._getOrCreateUserChannel = function() {
   });
 };
 
-container.subsribe = function(handler) {
+container.subscribe = function(handler) {
   container._getOrCreateUserChannel().then(function(channel) {
     skygear.on(channel.name, handler);
   });
