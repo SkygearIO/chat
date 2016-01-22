@@ -1,3 +1,5 @@
+import datetime
+
 import skygear
 from skygear.container import SkygearContainer
 from skygear.utils.context import current_user_id
@@ -42,7 +44,7 @@ def handle_message_before_save(new_record, old_record, db):
 
 
 @skygear.op("chat:get_messages", auth_required=True, user_required=True)
-def get_messages(conversation_id, limit):
+def get_messages(conversation_id, limit, before_time=None):
     conversation = _get_conversation(conversation_id)
 
     if current_user_id() not in conversation['participant_ids']:
@@ -53,9 +55,10 @@ def get_messages(conversation_id, limit):
             SELECT _id, _created_at, _created_by, body, conversation_id
             FROM app_my_skygear_app.message
             WHERE conversation_id = %s
+            AND (_created_at < %s OR %s IS NULL)
             ORDER BY _created_at DESC
             LIMIT %s;
-            ''', (conversation_id, limit)
+            ''', (conversation_id, before_time, before_time, limit)
         )
 
         results = []
@@ -63,7 +66,7 @@ def get_messages(conversation_id, limit):
             results.append({
                 '_id': row[0],
                 '_created_at': row[1].isoformat(),
-                'created_by': row[2],
+                '_created_by': row[2],
                 'body': row[3],
                 'conversation_id': row[4]
             })

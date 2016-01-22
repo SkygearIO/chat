@@ -132,4 +132,16 @@ container.createMessage = function(conversation_id, body) {
   return this._skygear.privateDB.save(message);
 };
 
+container.getMessages = function(conversation_id, limit, before_time) {
+  return skygear
+    .lambda("chat:get_messages", [conversation_id, limit, before_time])
+    .then(function(data) {
+      for (var i = 0; i < data['results'].length; i++) { 
+        data['results'][i]['_created_at'] = new Date(
+          data['results'][i]['_created_at'])
+      }
+      return data;
+    })
+}
+
 module.exports = container;
