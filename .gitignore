@@ -1,7 +1,9 @@
-/node_modules
+node_modules
 .vagrant
-/__pycache__
+__pycache__
 *.ipynb
 supervisord.*
 /.ipynb_checkpoints
 *.log
+notebook.conf
+Vagrantfile
