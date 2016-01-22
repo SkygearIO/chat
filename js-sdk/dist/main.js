@@ -1,5 +1,6 @@
 'use strict';
 
+const uuid = require('uuid');
 const skygear = require('skygear');
 const _ = require('underscore');
 skygear.endPoint = 'http://localhost:3001/';
@@ -8,6 +9,7 @@ skygear.configApiKey('my_skygear_key');
 const Conversation = skygear.Record.extend('conversation');
 const ChatUser = skygear.Record.extend('chat_user');
 const Message = skygear.Record.extend('message');
+const UserChannel = skygear.Record.extend('user_channel');
 
 const container = function() {};
 
@@ -134,14 +136,38 @@ container.createMessage = function(conversation_id, body) {
 
 container.getMessages = function(conversation_id, limit, before_time) {
   return skygear
-    .lambda("chat:get_messages", [conversation_id, limit, before_time])
+    .lambda('chat:get_messages', [conversation_id, limit, before_time])
     .then(function(data) {
-      for (var i = 0; i < data['results'].length; i++) { 
-        data['results'][i]['_created_at'] = new Date(
-          data['results'][i]['_created_at'])
+      for (var i = 0; i < data.results.length; i++) {
+        data.results[i]._created_at = new Date(
+          data.results[i]._created_at);
       }
       return data;
-    })
-}
+    });
+};
+
+container._getOrCreateUserChannel = function() {
+  const query = new this._skygear.Query(UserChannel);
+  const _this = this;
+  return this._skygear.privateDB.query(query).then(function(records) {
+    if (records.length > 0) {
+      return records[0];
+    }
+    return null;
+  }).then(function(record) {
+    if (record === null) {
+      const channel = new UserChannel();
+      channel.name = uuid.v4()
+      return _this._skygear.privateDB.save(channel);
+    }
+    return record;
+  });
+};
+
+container.subsribe = function(handler) {
+  container._getOrCreateUserChannel().then(function(channel) {
+    skygear.on(channel.name, handler);
+  });
+};
 
 module.exports = container;
