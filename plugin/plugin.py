@@ -1,9 +1,12 @@
 import datetime
+import uuid
 
+import jsonpickle
 import skygear
 from skygear.container import SkygearContainer
 from skygear.utils.context import current_user_id
 from skygear.utils import db
+from skygear import pubsub
 
 
 container = SkygearContainer()
@@ -12,19 +15,32 @@ container.app_name = "my_skygear_app"
 
 
 @skygear.before_save("conversation", async=False)
-def handle_conversation_before_save(new_record, old_record, db):
+def handle_conversation_before_save(record, original_record, db):
     # TODO: check user exists
 
-    if len(new_record['participant_ids']) == 0:
+    if len(record['participant_ids']) == 0:
         raise Exception("no participants")
 
-    if len(new_record['admin_ids']) == 0:
+    if len(record['admin_ids']) == 0:
         raise Exception("no admin assigned")
 
-    if old_record is not None:
-        if current_user_id() not in old_record['admin_ids']:
+    if original_record is not None:
+        if current_user_id() not in original_record['admin_ids']:
             raise Exception("no permission to edit conversation")
 
+@skygear.after_save("conversation")
+def handle_conversation_after_save(record, original_record, db):
+    if original_record is None:
+        for p_id in record['participant_ids']:
+            _publish_event(
+                "conversation", p_id, "create",
+                record, original_record)
+
+    else:
+        for p_id in set(record['participant_ids']
+                + original_record['participant_ids']):
+            _publish_event(
+                "conversation", p_id, "update", record, original_record)
 
 @skygear.before_delete("conversation", async=False)
 def handle_conversation_before_delete(record, db):
@@ -33,13 +49,13 @@ def handle_conversation_before_delete(record, db):
 
 
 @skygear.before_save("message", async=False)
-def handle_message_before_save(new_record, old_record, db):
-    conversation = _get_conversation(new_record['conversation_id'])
+def handle_message_before_save(record, original_record, db):
+    conversation = _get_conversation(record['conversation_id'])
 
     if current_user_id() not in conversation['participant_ids']:
         raise Exception("user not in conversation")
 
-    if old_record is not None:
+    if original_record is not None:
         raise Exception("message is not editable")
 
 
@@ -73,7 +89,6 @@ def get_messages(conversation_id, limit, before_time=None):
 
         return {'results': results}
 
-
 def _get_conversation(conversation_id):
     data = {
         'database_id': '_public',
@@ -99,3 +114,36 @@ def _get_conversation(conversation_id):
         raise Exception("no conversation found")
 
     return response['result'][0]
+
+
+def _publish_event(record_type, participant_id, event_type, record,
+        original_record):
+    data = {
+        'record_type': record_type,
+        'event_type': event_type,
+        'record': jsonpickle.encode(record),
+        'original_record': jsonpickle.encode(original_record)
+    }
+
+    channel_name = _get_channel_by_user_id(participant_id)
+
+    if channel_name:
+        pubsub.publish(channel_name, data)
+
+
+def _get_channel_by_user_id(user_id):
+    with db.conn() as conn:
+        cur = conn.execute('''
+            SELECT name
+            FROM app_my_skygear_app.user_channel
+            WHERE _owner_id = %s
+            LIMIT 1;
+            ''', (user_id,)
+        )
+
+        results = []
+        for row in cur:
+            results.append(row[0])
+
+        if len(results) > 0:
+            return results[0]
