@@ -31,11 +31,9 @@ module.exports = new function() {
   this.createConversation = function(
                             participant_ids,
                             admin_ids,
-                            is_direct_message,
                             title,
                             metadata) {
     const conversation = new Conversation();
-    conversation.is_direct_message = is_direct_message;
     conversation.title = title;
     conversation.metadata = metadata;
     conversation.participant_ids = _.unique(participant_ids);
