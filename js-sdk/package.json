@@ -20,7 +20,7 @@
   },
   "scripts": {
     "test": "eslint dist test && mocha",
-    "browserify": "browserify dist/main.js -o bundle.js -i react-native"
+    "browserify": "browserify demo/main.js -o demo/bundle.js -i react-native"
   },
   "repository": {
     "type": "git",
