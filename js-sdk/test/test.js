@@ -6,8 +6,9 @@ const chai = require('chai');
 
 chai.should();
 
-const chat = require('../dist/main');
-const skygear = chat._skygear;
+const skygear = require('skygear');
+skygear.configApiKey('my_skygear_key');
+const chat = require('../dist/skygear_chat');
 
 function cleanNock() {
   nock.cleanAll();
