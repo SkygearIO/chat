@@ -159,6 +159,8 @@ module.exports = new function() {
 
   this.subscribe = function(handler) {
     this._getOrCreateUserChannel().then(function(channel) {
+      skygear.pubsub.connect();
+      skygear.off(channel.name);
       skygear.on(channel.name, handler);
     });
   };
