@@ -161,7 +161,11 @@ module.exports = new function() {
     this._getOrCreateUserChannel().then(function(channel) {
       skygear.pubsub.connect();
       skygear.off(channel.name);
-      skygear.on(channel.name, handler);
+      skygear.on(channel.name, function(data) {
+        data.record = JSON.parse(data.record);
+        data.original_record = JSON.parse(data.original_record);
+        handler(data);
+      });
     });
   };
 

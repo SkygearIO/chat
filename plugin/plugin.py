@@ -28,24 +28,33 @@ def handle_conversation_before_save(record, original_record, db):
         if current_user_id() not in original_record['admin_ids']:
             raise Exception("no permission to edit conversation")
 
+
 @skygear.after_save("conversation")
 def handle_conversation_after_save(record, original_record, db):
     if original_record is None:
         for p_id in record['participant_ids']:
             _publish_event(
-                "conversation", p_id, "create",
+                p_id, "conversation", "create",
                 record, original_record)
 
     else:
         for p_id in set(record['participant_ids']
                 + original_record['participant_ids']):
             _publish_event(
-                "conversation", p_id, "update", record, original_record)
+                p_id, "conversation", "update", record, original_record)
+
 
 @skygear.before_delete("conversation", async=False)
 def handle_conversation_before_delete(record, db):
     if current_user_id() not in record['admin_ids']:
         raise Exception("no permission to delete conversation")
+
+
+@skygear.after_delete("conversation")
+def handle_conversation_after_delete(record, db):
+    for p_id in record['participant_ids']:
+        _publish_event(
+            p_id, "conversation", "delete", record)
 
 
 @skygear.before_save("message", async=False)
@@ -89,6 +98,7 @@ def get_messages(conversation_id, limit, before_time=None):
 
         return {'results': results}
 
+
 def _get_conversation(conversation_id):
     data = {
         'database_id': '_public',
@@ -116,8 +126,8 @@ def _get_conversation(conversation_id):
     return response['result'][0]
 
 
-def _publish_event(record_type, participant_id, event_type, record,
-        original_record):
+def _publish_event(participant_id, record_type, event_type, record,
+        original_record=None):
     data = {
         'record_type': record_type,
         'event_type': event_type,
