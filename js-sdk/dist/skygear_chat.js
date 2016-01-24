@@ -25,6 +25,25 @@ module.exports = new function() {
     return skygear.publicDB.save(conversation);
   };
 
+  this.getOrCreateDirectConversation = function(user_id) {
+    const query = skygear.Query(Conversation);
+    query.containsValue('participant_ids', skygear.currentUser.id);
+    query.containsValue('participant_ids', user_id);
+    query.equalTo('is_direct_message', true);
+    query.limit = 1;
+    return skygear.publicDB.query(query).then(function(records) {
+      if (records.length > 0) {
+        return records[0];
+      } else {
+        const conversation = new Conversation();
+        conversation.participant_ids = [skygear.currentUser.id, user_id];
+        conversation.admin_ids = [];
+        conversation.is_direct_message = true;
+        return skygear.publicDB.save(conversation);
+      }
+    });
+  }
+
   this.getConversation = function(conversation_id) {
     const query = skygear.Query(Conversation);
     query.equalTo('_id', conversation_id);

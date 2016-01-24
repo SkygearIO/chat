@@ -21,12 +21,23 @@ def handle_conversation_before_save(record, original_record, db):
     if len(record['participant_ids']) == 0:
         raise Exception("no participants")
 
-    if len(record['admin_ids']) == 0:
+    if len(record['admin_ids']) == 0 and not record.get('is_direct_message'):
         raise Exception("no admin assigned")
 
     if original_record is not None:
         if current_user_id() not in original_record['admin_ids']:
             raise Exception("no permission to edit conversation")
+
+    if original_record is None and record.get('is_direct_message'):
+        if current_user_id() not in record['participant_ids']:
+            raise Exception(
+                "cannot create direct conversations for other users")
+
+        if len(record['participant_ids']) != 2:
+            raise Exception(
+                "direct message must only have two participants")
+
+        record['admin_ids'] = []
 
 
 @skygear.after_save("conversation")
