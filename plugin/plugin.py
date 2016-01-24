@@ -68,6 +68,16 @@ def handle_message_before_save(record, original_record, db):
         raise Exception("message is not editable")
 
 
+@skygear.after_save("message")
+def handle_message_after_save(record, original_record, db):
+    conversation = _get_conversation(record['conversation_id'])
+
+    if original_record is None:
+        for p_id in conversation['participant_ids']:
+            _publish_event(
+                p_id, "message", "create", record)
+
+
 @skygear.op("chat:get_messages", auth_required=True, user_required=True)
 def get_messages(conversation_id, limit, before_time=None):
     conversation = _get_conversation(conversation_id)
