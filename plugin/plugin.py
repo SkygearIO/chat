@@ -121,8 +121,9 @@ def _publish_event(record_type, participant_id, event_type, record,
     data = {
         'record_type': record_type,
         'event_type': event_type,
-        'record': jsonpickle.encode(record),
-        'original_record': jsonpickle.encode(original_record)
+        'record': jsonpickle.encode(record, unpicklable=False),
+        'original_record': jsonpickle.encode(
+            original_record, unpicklable=False)
     }
 
     channel_name = _get_channel_by_user_id(participant_id)
