@@ -11,22 +11,6 @@ const Message = skygear.Record.extend('message');
 const UserChannel = skygear.Record.extend('user_channel');
 
 module.exports = new function() {
-  this.getChatUser = function() {
-    const query = new skygear.Query(ChatUser);
-    query.equalTo('_owner_id', skygear.currentUser.id);
-
-    return skygear.publicDB.query(query).then(function(records) {
-      if (records.length > 0) {
-        return records[0];
-      }
-    }).then(function(record) {
-      if (record === null) {
-        const user = new ChatUser();
-        return skygear.publicDB.save(user);
-      }
-      return record;
-    });
-  };
 
   this.createConversation = function(
                             participant_ids,
