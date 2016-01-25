@@ -112,10 +112,17 @@ module.exports = new function() {
     });
   };
 
-  this.createMessage = function(conversation_id, body) {
+  this.createMessage = function(conversation_id, body, metadata) {
     const message = new Message();
     message.conversation_id = conversation_id;
     message.body = body;
+
+    if (metadata === undefined) {
+      message.metadata = {};
+    } else {
+      message.metadata = metadata;
+    }
+
     return skygear.privateDB.save(message);
   };
 
