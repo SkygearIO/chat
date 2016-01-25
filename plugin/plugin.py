@@ -15,9 +15,7 @@ container.app_name = "my_skygear_app"
 
 
 @skygear.before_save("conversation", async=False)
-def handle_conversation_before_save(record, original_record, db):
-    # TODO: check user exists
-
+def handle_conversation_before_save(record, original_record, conn):
     if len(record['participant_ids']) == 0:
         raise Exception("no participants")
 
@@ -41,7 +39,7 @@ def handle_conversation_before_save(record, original_record, db):
 
 
 @skygear.after_save("conversation")
-def handle_conversation_after_save(record, original_record, db):
+def handle_conversation_after_save(record, original_record, conn):
     if original_record is None:
         for p_id in record['participant_ids']:
             _publish_event(
@@ -56,20 +54,20 @@ def handle_conversation_after_save(record, original_record, db):
 
 
 @skygear.before_delete("conversation", async=False)
-def handle_conversation_before_delete(record, db):
+def handle_conversation_before_delete(record, conn):
     if current_user_id() not in record['admin_ids']:
         raise Exception("no permission to delete conversation")
 
 
 @skygear.after_delete("conversation")
-def handle_conversation_after_delete(record, db):
+def handle_conversation_after_delete(record, conn):
     for p_id in record['participant_ids']:
         _publish_event(
             p_id, "conversation", "delete", record)
 
 
 @skygear.before_save("message", async=False)
-def handle_message_before_save(record, original_record, db):
+def handle_message_before_save(record, original_record, conn):
     conversation = _get_conversation(record['conversation_id'])
 
     if current_user_id() not in conversation['participant_ids']:
@@ -80,13 +78,42 @@ def handle_message_before_save(record, original_record, db):
 
 
 @skygear.after_save("message")
-def handle_message_after_save(record, original_record, db):
+def handle_message_after_save(record, original_record, conn):
     conversation = _get_conversation(record['conversation_id'])
 
     if original_record is None:
         for p_id in conversation['participant_ids']:
             _publish_event(
                 p_id, "message", "create", record)
+
+
+@skygear.before_save("last_message_read", async=False)
+def handle_last_message_read_before_save(record, original_record, conn):
+    new_id = record.get('message_id')
+    if new_id is None:
+        return
+
+    old_id = original_record and original_record.get('message_id')
+    conversation_id = record['conversation_id']
+
+    cur = conn.execute('''
+        SELECT _id, _created_at
+        FROM app_my_skygear_app.message
+        WHERE (_id = %s OR _id = %s)
+        AND conversation_id = %s
+        LIMIT 2;
+        ''', (new_id, old_id, conversation_id)
+    )
+
+    results = {}
+    for row in cur:
+        results[row[0]] = row[1]
+
+    if new_id not in results:
+        raise Exception("no message found")
+
+    if old_id and results[new_id] < results[old_id]:
+        raise Exception("the updated message is older")
 
 
 @skygear.op("chat:get_messages", auth_required=True, user_required=True)
@@ -119,12 +146,11 @@ def get_messages(conversation_id, limit, before_time=None):
 
         return {'results': results}
 
-
 def _get_conversation(conversation_id):
     data = {
         'database_id': '_public',
         'record_type': 'conversation',
-        'limit': 50,
+        'limit': 1,
         'sort': [],
         'include': {},
         'count': False,

@@ -7,6 +7,7 @@ const _ = require('underscore');
 const Conversation = skygear.Record.extend('conversation');
 const Message = skygear.Record.extend('message');
 const UserChannel = skygear.Record.extend('user_channel');
+const LastMessageRead = skygear.Record.extend('last_message_read');
 
 module.exports = new function() {
   this.createConversation = function(
@@ -61,7 +62,7 @@ module.exports = new function() {
     });
   };
 
-  this.editConversation = function(conversation_id, changes) {
+  this.updateConversation = function(conversation_id, changes) {
     const _this = this;
     return _this.getConversation(conversation_id).then(function(conversation) {
       if (changes.title !== undefined) {
@@ -138,7 +139,27 @@ module.exports = new function() {
       });
   };
 
-  this._getOrCreateUserChannel = function() {
+  this.markAsLastMessageRead = function(conversation_id, message_id) {
+    return _getOrCreateLastMessageRead(conversation_id).then(
+      function(record) {
+        record.message_id = message_id;
+        return skygear.privateDB.save(record);
+      });
+  };
+
+  this.subscribe = function(handler) {
+    _getOrCreateUserChannel().then(function(channel) {
+      skygear.pubsub.connect();
+      skygear.off(channel.name);
+      skygear.on(channel.name, function(data) {
+        data.record = JSON.parse(data.record);
+        data.original_record = JSON.parse(data.original_record);
+        handler(data);
+      });
+    });
+  };
+
+  function _getOrCreateUserChannel() {
     const query = new skygear.Query(UserChannel);
     return skygear.privateDB.query(query).then(function(records) {
       if (records.length > 0) {
@@ -153,17 +174,19 @@ module.exports = new function() {
       }
       return record;
     });
-  };
+  }
 
-  this.subscribe = function(handler) {
-    this._getOrCreateUserChannel().then(function(channel) {
-      skygear.pubsub.connect();
-      skygear.off(channel.name);
-      skygear.on(channel.name, function(data) {
-        data.record = JSON.parse(data.record);
-        data.original_record = JSON.parse(data.original_record);
-        handler(data);
-      });
+  function _getOrCreateLastMessageRead(conversation_id) {
+    const query = skygear.Query(LastMessageRead);
+    query.equalTo('conversation_id', conversation_id);
+    query.limit = 1;
+    return skygear.privateDB.query(query).then(function(records) {
+      if (records.length > 0) {
+        return records[0];
+      }
+      const record = new LastMessageRead();
+      record.conversation_id = conversation_id;
+      return skygear.privateDB.save(record);
     });
-  };
+  }
 };
