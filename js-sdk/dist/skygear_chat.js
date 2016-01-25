@@ -3,23 +3,18 @@
 
 const uuid = require('uuid');
 const _ = require('underscore');
-const skygear = require('skygear');
 
 const Conversation = skygear.Record.extend('conversation');
-const ChatUser = skygear.Record.extend('chat_user');
 const Message = skygear.Record.extend('message');
 const UserChannel = skygear.Record.extend('user_channel');
 
 module.exports = new function() {
-
   this.createConversation = function(
                             participant_ids,
                             admin_ids,
-                            title,
-                            metadata) {
+                            title) {
     const conversation = new Conversation();
     conversation.title = title;
-    conversation.metadata = metadata;
     conversation.participant_ids = _.unique(participant_ids);
     conversation.admin_ids = _.unique(admin_ids);
     return skygear.publicDB.save(conversation);
@@ -34,15 +29,14 @@ module.exports = new function() {
     return skygear.publicDB.query(query).then(function(records) {
       if (records.length > 0) {
         return records[0];
-      } else {
-        const conversation = new Conversation();
-        conversation.participant_ids = [skygear.currentUser.id, user_id];
-        conversation.admin_ids = [];
-        conversation.is_direct_message = true;
-        return skygear.publicDB.save(conversation);
       }
+      const conversation = new Conversation();
+      conversation.participant_ids = [skygear.currentUser.id, user_id];
+      conversation.admin_ids = [];
+      conversation.is_direct_message = true;
+      return skygear.publicDB.save(conversation);
     });
-  }
+  };
 
   this.getConversation = function(conversation_id) {
     const query = skygear.Query(Conversation);
@@ -62,8 +56,7 @@ module.exports = new function() {
   };
 
   this.deleteConversation = function(conversation_id) {
-    const _this = this;
-    return _this.getConversation(conversation_id).then(function(conversation) {
+    return this.getConversation(conversation_id).then(function(conversation) {
       return skygear.publicDB.del(conversation);
     });
   };
@@ -73,10 +66,6 @@ module.exports = new function() {
     return _this.getConversation(conversation_id).then(function(conversation) {
       if (changes.title !== undefined) {
         conversation.title = changes.title;
-      }
-
-      if (changes.metadata !== undefined) {
-        conversation.metadata = changes.metadata;
       }
 
       return skygear.publicDB.save(conversation);
@@ -144,7 +133,6 @@ module.exports = new function() {
 
   this._getOrCreateUserChannel = function() {
     const query = new skygear.Query(UserChannel);
-    const _this = this;
     return skygear.privateDB.query(query).then(function(records) {
       if (records.length > 0) {
         return records[0];
@@ -153,7 +141,7 @@ module.exports = new function() {
     }).then(function(record) {
       if (record === null) {
         const channel = new UserChannel();
-        channel.name = uuid.v4()
+        channel.name = uuid.v4();
         return skygear.privateDB.save(channel);
       }
       return record;
@@ -171,5 +159,4 @@ module.exports = new function() {
       });
     });
   };
-
 };
