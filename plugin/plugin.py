@@ -146,6 +146,50 @@ def get_messages(conversation_id, limit, before_time=None):
 
         return {'results': results}
 
+
+@skygear.op("chat:get_unread_message_count",
+    auth_required=True, user_required=True)
+def get_unread_message_count(conversation_id):
+    with db.conn() as conn:
+        cur = conn.execute('''
+            SELECT message_id
+            FROM app_my_skygear_app.last_message_read
+            WHERE conversation_id = %s
+            AND _database_id = %s
+            LIMIT 1;
+            ''', (conversation_id, current_user_id())
+        )
+
+        results = [row[0] for row in cur]
+
+        if results:
+            message_id = results[0]
+        else:
+            message_id = None
+
+        if message_id:
+            cur = conn.execute('''
+                SELECT COUNT(*)
+                FROM app_my_skygear_app.message
+                WHERE _created_at > (
+                    SELECT _created_at
+                    FROM app_my_skygear_app.message
+                    WHERE _id = %s
+                )
+                AND conversation_id = %s
+                ''', (message_id, conversation_id)
+            )
+        else:
+            cur = conn.execute('''
+                SELECT COUNT(*)
+                FROM app_my_skygear_app.message
+                WHERE conversation_id = %s
+                ''', (conversation_id)
+            )
+
+    return {'count': [row[0] for row in cur][0]}
+
+
 def _get_conversation(conversation_id):
     data = {
         'database_id': '_public',

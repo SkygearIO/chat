@@ -147,6 +147,13 @@ module.exports = new function() {
       });
   };
 
+  this.getUnreadMessageCount = function(conversation_id) {
+    return skygear.lambda('chat:get_unread_message_count', [conversation_id])
+      .then(function(data) {
+        return data.count;
+      });
+  };
+
   this.subscribe = function(handler) {
     _getOrCreateUserChannel().then(function(channel) {
       skygear.pubsub.connect();
