@@ -51,3 +51,20 @@ app:
     # When unspecified, the default is the number of CPU available, which
     # is the recommended setting.
     #GOMAXPROCS: 1
+    #
+
+chat-plugin:
+  build: ./plugin
+  links:
+  - app
+  - db
+  volumes:
+  - ./plugin:/usr/src/app
+  command: py-skygear chat_plugin.py
+  environment:
+    DATABASE_URL: postgresql://postgres:@db:5432/postgres?sslmode=disable 
+    PUBSUB_URL: ws://app:3000/pubsub
+    SKYGEAR_ADDRESS: tcp://app:5555
+    SKYGEAR_ENDPOINT: http://app:3000
+    SKYGEAR_APIKEY: my_skygear_key
+    SKYGEAR_APPNAME: my_skygear_app
