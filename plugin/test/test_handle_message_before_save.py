@@ -19,16 +19,14 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
 
     def record(self):
         return {
-            'participant_ids': ['user1', 'user2'],
-            'admin_ids': ['user1'],
-            'conversation_id': 'conversation1'
+            'conversation_id': 'conversation1',
+            'body': 'hihi'
         }
 
     def original_record(self):
         return {
-            'participant_ids': ['user1', 'user2'],
-            'admin_ids': ['user1'],
-            'conversation_id': 'conversation1'
+            'conversation_id': 'conversation1',
+            'body': 'hihi'
         }
 
     def test_original_record_is_not_none(self):

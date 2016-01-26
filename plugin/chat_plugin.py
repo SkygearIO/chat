@@ -86,11 +86,9 @@ def handle_message_before_save(record, original_record, conn):
 @skygear.after_save("message")
 def handle_message_after_save(record, original_record, conn):
     conversation = _get_conversation(record['conversation_id'])
-
-    if original_record is None:
-        for p_id in conversation['participant_ids']:
-            _publish_event(
-                p_id, "message", "create", record)
+    for p_id in conversation['participant_ids']:
+        _publish_event(
+            p_id, "message", "create", record)
 
 
 @skygear.before_save("last_message_read", async=False)
