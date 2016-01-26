@@ -4,6 +4,7 @@ import copy
 from unittest.mock import Mock
 
 import chat_plugin
+from chat_plugin import SkygearChatException
 from chat_plugin import handle_conversation_before_delete
 
 class TestHandleConversationBeforeDelete(unittest.TestCase):
@@ -19,7 +20,7 @@ class TestHandleConversationBeforeDelete(unittest.TestCase):
         }
 
     def test_delete_conversation_with_no_permission(self):
-        with self.assertRaises(Exception) as cm:
+        with self.assertRaises(SkygearChatException) as cm:
             handle_conversation_before_delete(self.record(), self.conn)
 
     def test_delete_conversation_with_permission(self):

@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import chat_plugin
 from chat_plugin import handle_conversation_before_save
+from chat_plugin import SkygearChatException
 
 
 class TestHandleConversationBeforeSave(unittest.TestCase):
@@ -31,14 +32,14 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
     def test_no_participants(self):
         record = self.record()
         record['participant_ids'] = []
-        with self.assertRaises(Exception) as cm:
+        with self.assertRaises(SkygearChatException) as cm:
             handle_conversation_before_save(
                 record, self.original_record(), self.conn)
 
     def test_no_admins(self):
         record = self.record()
         record['admin_ids'] = []
-        with self.assertRaises(Exception) as cm:
+        with self.assertRaises(SkygearChatException) as cm:
             handle_conversation_before_save(
                 record, self.original_record(), self.conn)
 
@@ -46,7 +47,7 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
         record = self.record()
         record['participant_ids'] = ['user2', 'user3']
         record['is_direct_message'] = True
-        with self.assertRaises(Exception) as cm:
+        with self.assertRaises(SkygearChatException) as cm:
             handle_conversation_before_save(
                 record, None, self.conn)
 
@@ -54,7 +55,7 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
         record = self.record()
         record['participant_ids'] = ['user1', 'user2', 'user3']
         record['is_direct_message'] = True
-        with self.assertRaises(Exception) as cm:
+        with self.assertRaises(SkygearChatException) as cm:
             handle_conversation_before_save(
                 record, None, self.conn)
 

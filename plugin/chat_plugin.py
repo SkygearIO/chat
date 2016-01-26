@@ -16,25 +16,29 @@ container.app_name = "my_skygear_app"
 schema_name = "app_%s" % container.app_name
 
 
+class SkygearChatException(Exception):
+    pass
+
+
 @skygear.before_save("conversation", async=False)
 def handle_conversation_before_save(record, original_record, conn):
     if len(record['participant_ids']) == 0:
-        raise Exception("no participants")
+        raise SkygearChatException("no participants")
 
     if len(record['admin_ids']) == 0 and not record.get('is_direct_message'):
-        raise Exception("no admin assigned")
+        raise SkygearChatException("no admin assigned")
 
     if original_record is not None:
         if current_user_id() not in original_record['admin_ids']:
-            raise Exception("no permission to edit conversation")
+            raise SkygearChatException("no permission to edit conversation")
 
     if original_record is None and record.get('is_direct_message'):
         if current_user_id() not in record['participant_ids']:
-            raise Exception(
+            raise SkygearChatException(
                 "cannot create direct conversations for other users")
 
         if len(record['participant_ids']) != 2:
-            raise Exception(
+            raise SkygearChatException(
                 "direct message must only have two participants")
 
         record['admin_ids'] = []
@@ -58,7 +62,7 @@ def handle_conversation_after_save(record, original_record, conn):
 @skygear.before_delete("conversation", async=False)
 def handle_conversation_before_delete(record, conn):
     if current_user_id() not in record['admin_ids']:
-        raise Exception("no permission to delete conversation")
+        raise SkygearChatException("no permission to delete conversation")
 
 
 @skygear.after_delete("conversation")
@@ -73,10 +77,10 @@ def handle_message_before_save(record, original_record, conn):
     conversation = _get_conversation(record['conversation_id'])
 
     if current_user_id() not in conversation['participant_ids']:
-        raise Exception("user not in conversation")
+        raise SkygearChatException("user not in conversation")
 
     if original_record is not None:
-        raise Exception("message is not editable")
+        raise SkygearChatException("message is not editable")
 
 
 @skygear.after_save("message")
@@ -117,10 +121,10 @@ def handle_last_message_read_before_save(record, original_record, conn):
         results[row[0]] = row[1]
 
     if new_id not in results:
-        raise Exception("no message found")
+        raise SkygearChatException("no message found")
 
     if old_id and results[new_id] < results[old_id]:
-        raise Exception("the updated message is older")
+        raise SkygearChatException("the updated message is older")
 
 
 @skygear.op("chat:get_messages", auth_required=True, user_required=True)
@@ -128,7 +132,7 @@ def get_messages(conversation_id, limit, before_time=None):
     conversation = _get_conversation(conversation_id)
 
     if current_user_id() not in conversation['participant_ids']:
-        raise Exception("user not in conversation")
+        raise SkygearChatException("user not in conversation")
 
     with db.conn() as conn:
         cur = conn.execute('''
@@ -235,7 +239,7 @@ def _get_conversation(conversation_id):
     )
 
     if len(response['result']) == 0:
-        raise Exception("no conversation found")
+        raise SkygearChatException("no conversation found")
 
     return response['result'][0]
 
