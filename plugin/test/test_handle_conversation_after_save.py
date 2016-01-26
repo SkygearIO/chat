@@ -1,16 +1,12 @@
 import unittest
-import copy
-from unittest.mock import Mock
+from unittest.mock import patch
 
-import chat_plugin
 from chat_plugin import handle_conversation_after_save
 
 class TestHandleConversationAfterSave(unittest.TestCase):
 
     def setUp(self):
         self.conn = None
-        self.mock_publish_event = Mock()
-        chat_plugin._publish_event = self.mock_publish_event
 
     def record(self):
         return {
@@ -24,11 +20,14 @@ class TestHandleConversationAfterSave(unittest.TestCase):
             'admin_ids': ['user1']
         }
 
-    def test_newly_created_conversation(self):
+    @patch('chat_plugin._publish_event')
+    def test_newly_created_conversation(self, mock_publish_event):
         handle_conversation_after_save(self.record(), None, self.conn)
-        self.assertTrue(self.mock_publish_event.call_count == 2)
+        self.assertIs(mock_publish_event.call_count, 2)
 
-    def test_newly_created_conversation_2(self):
+    @patch('chat_plugin._publish_event')
+    def test_newly_created_conversation_with_original_record(
+            self, mock_publish_event):
         handle_conversation_after_save(
             self.record(), self.original_record(), self.conn)
-        self.assertTrue(self.mock_publish_event.call_count == 3)
+        self.assertIs(mock_publish_event.call_count, 3)

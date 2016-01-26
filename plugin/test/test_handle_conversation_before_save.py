@@ -1,17 +1,13 @@
 import unittest
-import copy
-from unittest.mock import Mock
+from unittest.mock import patch, Mock
 
-import chat_plugin
-from chat_plugin import handle_conversation_before_save
-from chat_plugin import SkygearChatException
+from chat_plugin import handle_conversation_before_save, SkygearChatException
 
 
 class TestHandleConversationBeforeSave(unittest.TestCase):
 
     def setUp(self):
         self.conn = None
-        chat_plugin.current_user_id = Mock(return_value="user1")
 
     def record(self):
         return {
@@ -25,10 +21,12 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
             'admin_ids': ['user1']
         }
 
+    @patch('chat_plugin.current_user_id', Mock(return_value="user1"))
     def test_with_valid_record(self):
         handle_conversation_before_save(
             self.record(), self.original_record(), self.conn)
 
+    @patch('chat_plugin.current_user_id', Mock(return_value="user1"))
     def test_no_participants(self):
         record = self.record()
         record['participant_ids'] = []
@@ -36,6 +34,7 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
             handle_conversation_before_save(
                 record, self.original_record(), self.conn)
 
+    @patch('chat_plugin.current_user_id', Mock(return_value="user1"))
     def test_no_admins(self):
         record = self.record()
         record['admin_ids'] = []
@@ -43,6 +42,7 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
             handle_conversation_before_save(
                 record, self.original_record(), self.conn)
 
+    @patch('chat_plugin.current_user_id', Mock(return_value="user1"))
     def test_create_direct_message_for_others(self):
         record = self.record()
         record['participant_ids'] = ['user2', 'user3']
@@ -51,6 +51,7 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
             handle_conversation_before_save(
                 record, None, self.conn)
 
+    @patch('chat_plugin.current_user_id', Mock(return_value="user1"))
     def test_create_direct_message_with_three_participants(self):
         record = self.record()
         record['participant_ids'] = ['user1', 'user2', 'user3']
@@ -59,6 +60,7 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
             handle_conversation_before_save(
                 record, None, self.conn)
 
+    @patch('chat_plugin.current_user_id', Mock(return_value="user1"))
     def test_direct_message_should_have_no_admin(self):
         record = self.record()
         record['is_direct_message'] = True

@@ -1,16 +1,13 @@
 import unittest
-import copy
-from unittest.mock import Mock
+from unittest.mock import patch
 
-import chat_plugin
 from chat_plugin import handle_conversation_after_delete
+
 
 class TestHandleConversationAfterDelete(unittest.TestCase):
 
     def setUp(self):
         self.conn = None
-        self.mock_publish_event = Mock()
-        chat_plugin._publish_event = self.mock_publish_event
 
     def record(self):
         return {
@@ -18,6 +15,7 @@ class TestHandleConversationAfterDelete(unittest.TestCase):
             'admin_ids': ['user1']
         }
 
-    def test_publish_event_count_should_be_three(self):
+    @patch('chat_plugin._publish_event')
+    def test_publish_event_count_should_be_three(self, mock_publish_event):
         handle_conversation_after_delete(self.record(), self.conn)
-        self.assertIs(self.mock_publish_event.call_count, 3)
+        self.assertIs(mock_publish_event.call_count, 3)

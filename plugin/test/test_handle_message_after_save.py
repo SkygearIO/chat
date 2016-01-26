@@ -1,8 +1,6 @@
 import unittest
-import copy
-from unittest.mock import Mock
+from unittest.mock import patch, Mock
 
-import chat_plugin
 from chat_plugin import handle_message_after_save
 
 
@@ -10,11 +8,6 @@ class TestHandleMessageAfterSave(unittest.TestCase):
 
     def setUp(self):
         self.conn = None
-        self._publish_event_mock = Mock()
-        chat_plugin._publish_event = self._publish_event_mock
-        chat_plugin._get_conversation = Mock(return_value={
-            'participant_ids': ['user1', 'user2'],
-        })
 
     def record(self):
         return {
@@ -28,6 +21,12 @@ class TestHandleMessageAfterSave(unittest.TestCase):
             'body': 'hihi'
         }
 
-    def test_publish_event_count(self):
-        handle_message_after_save(self.record(), self.original_record(), self.conn)
-        self.assertIs(self._publish_event_mock.call_count, 2)
+    @patch('chat_plugin._publish_event')
+    @patch('chat_plugin._get_conversation', Mock(return_value={
+        'participant_ids': ['user1', 'user2']}))
+    def test_publish_event_count(
+            self, mock_publish_event):
+
+        handle_message_after_save(
+            self.record(), self.original_record(), self.conn)
+        self.assertIs(mock_publish_event.call_count, 2)
