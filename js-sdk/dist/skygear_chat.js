@@ -9,7 +9,7 @@ const Message = skygear.Record.extend('message');
 const UserChannel = skygear.Record.extend('user_channel');
 const LastMessageRead = skygear.Record.extend('last_message_read');
 
-module.exports = new function() {
+function SkygearChatContainer() {
   this.createConversation = function(
                             participant_ids,
                             admin_ids,
@@ -63,8 +63,7 @@ module.exports = new function() {
   };
 
   this.updateConversation = function(conversation_id, changes) {
-    const _this = this;
-    return _this.getConversation(conversation_id).then(function(conversation) {
+    return this.getConversation(conversation_id).then(function(conversation) {
       if (changes.title !== undefined) {
         conversation.title = changes.title;
       }
@@ -74,8 +73,7 @@ module.exports = new function() {
   };
 
   this.addParticipants = function(conversation_id, participant_ids) {
-    const _this = this;
-    return _this.getConversation(conversation_id).then(function(conversation) {
+    return this.getConversation(conversation_id).then(function(conversation) {
       conversation.participant_ids = _.union(
           conversation.participant_ids, participant_ids);
 
@@ -84,8 +82,7 @@ module.exports = new function() {
   };
 
   this.removeParticipants = function(conversation_id, participant_ids) {
-    const _this = this;
-    return _this.getConversation(conversation_id).then(function(conversation) {
+    return this.getConversation(conversation_id).then(function(conversation) {
       conversation.participant_ids = _.difference(
           _.unique(conversation.participant_ids), participant_ids);
 
@@ -94,8 +91,7 @@ module.exports = new function() {
   };
 
   this.addAdmins = function(conversation_id, admin_ids) {
-    const _this = this;
-    return _this.getConversation(conversation_id).then(function(conversation) {
+    return this.getConversation(conversation_id).then(function(conversation) {
       conversation.admin_ids = _.union(
           conversation.admin_ids, admin_ids);
 
@@ -104,8 +100,7 @@ module.exports = new function() {
   };
 
   this.removeAdmins = function(conversation_id, admin_ids) {
-    const _this = this;
-    return _this.getConversation(conversation_id).then(function(conversation) {
+    return this.getConversation(conversation_id).then(function(conversation) {
       conversation.admin_ids = _.difference(
           _.unique(conversation.admin_ids), admin_ids);
 
@@ -196,4 +191,6 @@ module.exports = new function() {
       return skygear.privateDB.save(record);
     });
   }
-};
+}
+
+module.exports = new SkygearChatContainer();

@@ -53,7 +53,7 @@ app:
     #GOMAXPROCS: 1
     #
 
-chat-plugin:
+chat_plugin:
   build: ./plugin
   links:
   - app
