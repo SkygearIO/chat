@@ -5,6 +5,7 @@ Chat addon to provide common operation
 
 ## createConversation(participant_ids, admin_ids, title)
 create a conversation
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | participant_ids  | <code>Array</code> | |
@@ -14,6 +15,7 @@ create a conversation
 
 ## getConversation(conversation_id)
 retrieve a conversation by id
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -25,12 +27,14 @@ get all conversations in which the current user is participating
 
 ## updateConversation(conversation_id, changes)
 edit a conversation (only admin)
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
 | changes | <code>Object</code> | |
 
 available parameters of changes:
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | title | <code>String</code> | |
@@ -38,6 +42,7 @@ available parameters of changes:
 
 ## deleteConversation(conversation_id)
 delete a conversation by id (only admin)
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -45,6 +50,7 @@ delete a conversation by id (only admin)
 
 ## deleteConversation(conversation_id)
 delete a conversation by id (only admin)
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -52,6 +58,7 @@ delete a conversation by id (only admin)
 
 ## addParticipants(conversation_id, participant_ids)
 add participants to a conversation (only admin)
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -60,6 +67,7 @@ add participants to a conversation (only admin)
 
 ## removeParticipants(conversation_id, participant_ids)
 remove participants from a conversation (only admin)
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -68,6 +76,7 @@ remove participants from a conversation (only admin)
 
 ## addAdmins(conversation_id, admin_ids)
 add admins to a conversation (only admin)
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -76,6 +85,7 @@ add admins to a conversation (only admin)
 
 ## removeAdmins(conversation_id, admin_ids)
 remove admins from a conversation (only admin)
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -84,6 +94,7 @@ remove admins from a conversation (only admin)
 
 ## createMessage(conversation_id, body, metadata)
 send a message to a conversation (only participants)
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -93,6 +104,7 @@ send a message to a conversation (only participants)
 
 ## getMessages(conversation_id, limit, before_time)
 get messages from a conversation in descending order of created_at
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -102,6 +114,7 @@ get messages from a conversation in descending order of created_at
 
 ## getUnreadMessageCount(conversation_id)
 get unread message count of a conversation of the current user 
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
@@ -119,11 +132,13 @@ required by getUnreadMessageCount
 
 ## subscribe(handler)
 set the subscriber for events received
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | handler| <code>function</code> |  |
 
 the handler should accept data with the following structure:
+
 | Param  | Type                | Description  |
 | ------ | ------------------- | ------------ |
 | record_type | <code>String</code> | conversation or message |
