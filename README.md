@@ -55,6 +55,12 @@ delete a conversation by id (only admin)
 | ------ | ------------------- | ------------ |
 | conversation_id  | <code>String</code> | |
 
+## getOrCreateDirectConversation(user_id)
+get the existing direct conversation, or create if not exists
+
+| Param  | Type                | Description  |
+| ------ | ------------------- | ------------ |
+| user_id  | <code>String</code> | |
 
 ## addParticipants(conversation_id, participant_ids)
 add participants to a conversation (only admin)
