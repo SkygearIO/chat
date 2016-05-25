@@ -259,6 +259,9 @@ def _publish_event(participant_id, record_type, event_type, record,
 
 
 def _get_channel_by_user_id(user_id):
+    if not _check_if_table_exists('user_channel'):
+        return None
+
     with db.conn() as conn:
         cur = conn.execute('''
             SELECT name
@@ -277,3 +280,17 @@ def _get_channel_by_user_id(user_id):
 
         if len(results) > 0:
             return results[0]
+
+def _check_if_table_exists(tablename):
+    with db.conn() as conn:
+        cur = conn.execute('''
+            SELECT to_regclass(%(name)s)
+            ''', {
+                'name': schema_name + "." + tablename,
+            })
+        results = []
+        for row in cur:
+            if row[0] != None:
+                results.append(row[0])
+
+        return len(results) > 0
