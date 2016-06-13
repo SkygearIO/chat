@@ -1,3 +1,4 @@
+import os
 import datetime
 import uuid
 
@@ -11,8 +12,8 @@ from psycopg2.extensions import AsIs
 
 
 container = SkygearContainer()
-container.api_key = "my_skygear_key"
-container.app_name = "my_skygear_app"
+container.api_key = os.getenv('API_KEY', "my_skygear_key")
+container.app_name = os.getenv('APP_NAME', "my_skygear_app")
 schema_name = "app_%s" % container.app_name
 
 
