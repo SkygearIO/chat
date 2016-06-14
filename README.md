@@ -1,5 +1,19 @@
-# skygear-chat
+# Skygear-chat
 Chat addon to provide common operation
+
+# How to enable chat in your cloud code 
+
+First, submodule to import the source code.
+
+```
+git submodule add git@github.com:SkygearIO/chat.git chat
+```
+
+In your cloud code, import the chat plugin. Skygear will load and lambda and
+database hook will be ready for use.
+```
+from .chat import plugin as chat_plugin
+```
 
 # APIs
 
