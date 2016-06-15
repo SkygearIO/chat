@@ -1,0 +1,28 @@
+language: python
+sudo: false
+python:
+  - '3.5'
+
+cache:
+  directories:
+    - node_modules
+
+before_install:
+  - pip install --upgrade pip
+  - pip install pylama
+  - pip install lizard
+  - nvm install 5.1
+  - node -v
+  - npm -v
+
+install:
+  - (cd ./js-sdk; npm install)
+
+script:
+  - pylama plugin
+  - lizard plugin -C 10 -w -i 0
+  - (cd ./js-sdk; npm run lint)
+
+notifications:
+  slack: oursky:zkYSIOiC9mhZYds4fs0n9fW6
+
