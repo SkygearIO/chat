@@ -72,5 +72,22 @@ class Demo {
       console.log(result);
     });
   }
+
+  getMessagesTo(conversationID, limit, beforeTime, el) {
+    return this.plugin.getMessages(conversationID, limit, beforeTime).then(function (result) {
+      const ul = $(el);
+      ul.innerHTML = "";
+      console.log(result);
+      ul.textContent = JSON.stringify(result);
+    }.bind(this));
+  }
+
+  createMessage(conversationID, content, metadata, el) {
+    return this.plugin.createMessage(conversationID, content, metadata).then(function (result) {
+      const ul = $(el);
+      console.log(result);
+      ul.textContent = JSON.stringify(result);
+    }.bind(this));
+  }
 }
 
