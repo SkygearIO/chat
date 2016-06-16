@@ -5,6 +5,7 @@
   "main": "dist/main.js",
   "dependencies": {
     "skygear": "^0.3.0",
+    "underscore": "^1.8.3",
     "uuid": "^2.0.1"
   },
   "devDependencies": {
@@ -19,7 +20,7 @@
   "scripts": {
     "lint": "eslint dist test",
     "test": "mocha test",
-    "browserify": "browserify demo/main.js -o demo/bundle.js -i react-native"
+    "browserify": "browserify demo/main.js -o demo/bundle.js -i react-native -i localStorage"
   },
   "eslintConfig": {
     "extends": "google"
