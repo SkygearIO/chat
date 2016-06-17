@@ -1,6 +1,6 @@
 [submodule "skygear-SDK-JS"]
 	path = skygear-SDK-JS
-	url = git@github.com:SkygearIO/skygear-SDK-JS.git
+	url = http://github.com/SkygearIO/skygear-SDK-JS.git
 [submodule "py-skygear"]
 	path = py-skygear
-	url = git@github.com:SkygearIO/py-skygear.git
+	url = http://github.com/SkygearIO/py-skygear.git
