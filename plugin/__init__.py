@@ -1,6 +1,4 @@
 import os
-import datetime
-import uuid
 
 import skygear
 from skygear.container import SkygearContainer
@@ -54,8 +52,8 @@ def handle_conversation_after_save(record, original_record, conn):
                 record, original_record)
 
     else:
-        for p_id in set(record['participant_ids']
-                + original_record['participant_ids']):
+        p_ids = record['participant_ids'] + original_record['participant_ids']
+        for p_id in set(p_ids):
             _publish_event(
                 p_id, "conversation", "update", record, original_record)
 
@@ -108,11 +106,11 @@ def handle_last_message_read_before_save(record, original_record, conn):
         AND conversation_id = %(conversation_id)s
         LIMIT 2;
         ''', {
-            'schema_name': AsIs(schema_name),
-            'new_id': new_id,
-            'old_id': old_id,
-            'conversation_id': conversation_id
-        }
+        'schema_name': AsIs(schema_name),
+        'new_id': new_id,
+        'old_id': old_id,
+        'conversation_id': conversation_id
+    }
     )
 
     results = {}
@@ -142,11 +140,11 @@ def get_messages(conversation_id, limit, before_time=None):
             ORDER BY _created_at DESC
             LIMIT %(limit)s;
             ''', {
-                'schema_name': AsIs(schema_name),
-                'conversation_id': conversation_id,
-                'before_time': before_time,
-                'limit': limit
-            }
+            'schema_name': AsIs(schema_name),
+            'conversation_id': conversation_id,
+            'before_time': before_time,
+            'limit': limit
+        }
         )
 
         results = []
@@ -163,7 +161,7 @@ def get_messages(conversation_id, limit, before_time=None):
 
 
 @skygear.op("chat:get_unread_message_count",
-    auth_required=True, user_required=True)
+            auth_required=True, user_required=True)
 def get_unread_message_count(conversation_id):
     with db.conn() as conn:
         cur = conn.execute('''
@@ -173,10 +171,10 @@ def get_unread_message_count(conversation_id):
             AND _database_id = %(user_id)s
             LIMIT 1;
             ''', {
-                'schema_name': AsIs(schema_name),
-                'conversation_id': conversation_id,
-                'user_id': current_user_id()
-            }
+            'schema_name': AsIs(schema_name),
+            'conversation_id': conversation_id,
+            'user_id': current_user_id()
+        }
         )
 
         results = [row[0] for row in cur]
@@ -197,10 +195,10 @@ def get_unread_message_count(conversation_id):
                 )
                 AND conversation_id = %(conversation_id)s
                 ''', {
-                    'schema_name': AsIs(schema_name),
-                    'message_id': message_id,
-                    'conversation_id': conversation_id
-                }
+                'schema_name': AsIs(schema_name),
+                'message_id': message_id,
+                'conversation_id': conversation_id
+            }
             )
         else:
             cur = conn.execute('''
@@ -208,9 +206,9 @@ def get_unread_message_count(conversation_id):
                 FROM %(schema_name)s.message
                 WHERE conversation_id = %(conversation_id)s
                 ''', {
-                    'schema_name': AsIs(schema_name),
-                    'conversation_id': conversation_id
-                }
+                'schema_name': AsIs(schema_name),
+                'conversation_id': conversation_id
+            }
             )
 
     return {'count': [row[0] for row in cur][0]}
@@ -225,11 +223,11 @@ def _get_conversation(conversation_id):
         'include': {},
         'count': False,
         'predicate': [
-        'eq', {
-            '$type': 'keypath',
-            '$val': '_id'
-        },
-        conversation_id]
+            'eq', {
+                '$type': 'keypath',
+                '$val': '_id'
+            },
+            conversation_id]
     }
 
     response = skygear.container.send_action(
@@ -244,7 +242,7 @@ def _get_conversation(conversation_id):
 
 
 def _publish_event(participant_id, record_type, event_type, record,
-        original_record=None):
+                   original_record=None):
     serialize_orig_record = None
     if original_record is not None:
         serialize_orig_record = serialize_record(original_record)
@@ -272,9 +270,9 @@ def _get_channel_by_user_id(user_id):
             WHERE _owner_id = %(user_id)s
             LIMIT 1;
             ''', {
-                'schema_name': AsIs(schema_name),
-                'user_id': user_id
-            }
+            'schema_name': AsIs(schema_name),
+            'user_id': user_id
+        }
         )
 
         results = []
@@ -284,13 +282,14 @@ def _get_channel_by_user_id(user_id):
         if len(results) > 0:
             return results[0]
 
+
 def _check_if_table_exists(tablename):
     with db.conn() as conn:
         cur = conn.execute('''
             SELECT to_regclass(%(name)s)
             ''', {
-                'name': schema_name + "." + tablename,
-            })
+            'name': schema_name + "." + tablename,
+        })
         results = []
         for row in cur:
             if row[0] != None:
