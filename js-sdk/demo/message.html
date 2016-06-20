@@ -8,20 +8,15 @@
     <p>
       <label>End Point</label><br/>
       <input id="endpoint" type="text"
-      value='https://chat.skygeario.com/' />
+        readonly
+        value='https://chat.skygeario.com/' />
     </p>
     <p>
       <label>Api Key</label><br/>
       <input id="api-key" type="text"
-      value='key' />
+        readonly
+        value='key' />
     </p>
-    <p>You may got the above value from <a
-      href="https://portal.skygear.io/app/info">Portal</a></p>
-    <p><button
-      onclick="demo.configSkygear(inputVal('endpoint'), inputVal('api-key'),
-      'token');"
-    >Apply End Point
-    </button></p>
     <p>
       <label>Token</label>
       <span id="accessToken"></span>
@@ -34,6 +29,10 @@
       <label>Email</label>
       <span id="currentEmail"></span>
     </p>
+    <p>
+      <a href="./index.html">Go back to conversation list</a>
+    </p>
+
     <hr/>
 
     <h3>Messages</h3>
@@ -60,10 +59,12 @@
     </p>
     <script>
       var demo = new Demo(skygear, skygear_chat);
-      demo.configSkygear(
-        inputVal('endpoint'),
-        inputVal('api-key')
-      );
+      demo.restore();
+      var u = new URL(window.location);
+      var cid = u.searchParams.get("conversation");
+      if (cid) {
+        $("conversation-id").value = cid;
+      }
     </script>
   </body>
 </html>

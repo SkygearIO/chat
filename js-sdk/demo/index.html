@@ -70,6 +70,7 @@
     <p><button
       onclick="demo.createDirectConversation(inputVal('direct-user'))"
       >Talk to User</button></p>
+    <p id="direct-conversation"></p>
     <hr/>
     <h3>Conversation</h3>
     <ul id="conversation">
@@ -78,12 +79,17 @@
       onclick="demo.fetchConversationTo('conversation');"
     >Fetch Converstion</button></p>
     <hr/>
+    <h3>Go to converation</h3>
+    <p>
+      <label>Conversation ID</label>
+      <input id="goto-conversation" type="text" />
+    </p>
+    <p><button
+      onclick="window.location='message.html?conversation='+inputVal('goto-conversation');"
+    >Fetch Users</button></p>
     <script>
       var demo = new Demo(skygear, skygear_chat);
-      demo.configSkygear(
-        inputVal('endpoint'),
-        inputVal('api-key')
-      );
+      demo.restore();
     </script>
   </body>
 </html>

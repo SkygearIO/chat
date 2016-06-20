@@ -12,9 +12,24 @@ class Demo {
   constructor(container, plugin) {
     this.container = container;
     this.plugin = plugin;
+    this.endpointEl = $('endpoint');
+    this.apiKeyEl = $('api-key');
     this.usernameEl = $('currentUsername');
     this.emailEl = $('currentEmail');
     this.tokenEl = $('accessToken');
+    this.directConversationEl = $('direct-conversation');
+  }
+
+  restore() {
+    let endPoint = localStorage.getItem('skygear-endpoint');
+    if (endPoint === null) {
+      endPoint = 'https://chat.skygeario.com/';
+    }
+    let apiKey = localStorage.getItem('skygear-apikey');
+    if (apiKey === null) {
+      apiKey = 'apikey';
+    }
+    this.configSkygear(endPoint, apiKey);
   }
 
   configSkygear(endPoint, apiKey) {
@@ -22,6 +37,10 @@ class Demo {
       endPoint: endPoint,
       apiKey: apiKey
     }).then(function () {
+      localStorage.setItem('skygear-endpoint', skygear.endPoint);
+      localStorage.setItem('skygear-apikey', skygear.apiKey);
+      this.endpointEl.value = skygear.endPoint;
+      this.apiKeyEl.value = skygear.apiKey;
       this.displayCurrentUser();
     }.bind(this));
   }
@@ -68,9 +87,14 @@ class Demo {
   }
 
   createDirectConversation(userID) {
+    // FIXME: the SDK should strip the prefix for me.
+    if (userID.startsWith("user/")) {
+      userID = userID.substr(5);
+    }
     return this.plugin.getOrCreateDirectConversation(userID).then(function (result) {
       console.log(result);
-    });
+      this.directConversationEl.textContent = result._id;
+    }.bind(this));
   }
 
   getMessagesTo(conversationID, limit, beforeTime, el) {
