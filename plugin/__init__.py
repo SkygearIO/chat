@@ -292,7 +292,7 @@ def _check_if_table_exists(tablename):
         })
         results = []
         for row in cur:
-            if row[0] != None:
+            if row[0] is not None:
                 results.append(row[0])
 
         return len(results) > 0
