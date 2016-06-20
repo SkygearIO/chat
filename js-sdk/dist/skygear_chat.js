@@ -113,7 +113,7 @@ function SkygearChatContainer() {
     message.conversation_id = conversation_id;
     message.body = body;
 
-    if (metadata === undefined) {
+    if (metadata === undefined || metadata === null) {
       message.metadata = {};
     } else {
       message.metadata = metadata;

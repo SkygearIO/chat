@@ -1,0 +1,70 @@
+<html>
+  <head>
+    <script src="./bundle.js"></script>
+    <script src="./demo.js"></script>
+  </head>
+  <body>
+    <h1>Demo of Skygear Chat plugin with JS-SDK</h1>
+    <p>
+      <label>End Point</label><br/>
+      <input id="endpoint" type="text"
+        readonly
+        value='https://chat.skygeario.com/' />
+    </p>
+    <p>
+      <label>Api Key</label><br/>
+      <input id="api-key" type="text"
+        readonly
+        value='key' />
+    </p>
+    <p>
+      <label>Token</label>
+      <span id="accessToken"></span>
+    </p>
+    <p>
+      <label>Username</label>
+      <span id="currentUsername"></span>
+    </p>
+    <p>
+      <label>Email</label>
+      <span id="currentEmail"></span>
+    </p>
+    <p>
+      <a href="./index.html">Go back to conversation list</a>
+    </p>
+
+    <hr/>
+
+    <h3>Messages</h3>
+    <p>
+      <label>Conversation ID</label>
+      <input id="conversation-id" type="text" />
+    </p>
+    <ul id="messages">
+    </ul>
+    <p><button
+      onclick="demo.getMessagesTo(inputVal('conversation-id'), null, null,
+      'messages');"
+    >Fetch messages
+    </button></p>
+    <hr/>
+    <p>
+      <textarea id="message-content"></textarea>
+      <button
+        onclick="demo.createMessage(inputVal('conversation-id'),
+        inputVal('message-content'),
+        null, 'messages');"
+      >Send message
+      </button>
+    </p>
+    <script>
+      var demo = new Demo(skygear, skygear_chat);
+      demo.restore();
+      var u = new URL(window.location);
+      var cid = u.searchParams.get("conversation");
+      if (cid) {
+        $("conversation-id").value = cid;
+      }
+    </script>
+  </body>
+</html>
