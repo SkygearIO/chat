@@ -1,70 +1,82 @@
+<!DOCTYPE html>
 <html>
   <head>
     <script src="./bundle.js"></script>
     <script src="./demo.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
   </head>
-  <body>
-    <h1>Demo of Skygear Chat plugin with JS-SDK</h1>
-    <p>
-      <label>End Point</label><br/>
-      <input id="endpoint" type="text"
-        readonly
-        value='https://chat.skygeario.com/' />
-    </p>
-    <p>
-      <label>Api Key</label><br/>
-      <input id="api-key" type="text"
-        readonly
-        value='key' />
-    </p>
-    <p>
-      <label>Token</label>
-      <span id="accessToken"></span>
-    </p>
-    <p>
-      <label>Username</label>
-      <span id="currentUsername"></span>
-    </p>
-    <p>
-      <label>Email</label>
-      <span id="currentEmail"></span>
-    </p>
-    <p>
-      <a href="./index.html">Go back to conversation list</a>
-    </p>
+  <body id="message">
+    <div class="menu">
+        <div class="back"> <img src="http://i.imgur.com/DY6gND0.png" draggable="false"/></div>
+        <div class="name" id="user-name">-</div>
+        <div class="last">Demo of Skygear Chat</div>
+    </div>
+    <section class="settings">
+      <p>
+        <label>End Point</label><br/>
+        <input id="endpoint" type="text"
+          readonly
+          value='https://chat.skygeario.com/' />
+      </p>
+      <p>
+        <label>Api Key</label><br/>
+        <input id="api-key" type="text"
+          readonly
+          value='key' />
+      </p>
+      <p>
+        <label>Token</label>
+        <span id="accessToken"></span>
+      </p>
+      <p>
+        <label>Username</label>
+        <span id="currentUsername"></span>
+      </p>
+      <p>
+        <label>Email</label>
+        <span id="currentEmail"></span>
+      </p>
+      <p>
+        <a href="./index.html">Go back to conversation list</a>
+      </p>
 
-    <hr/>
+    </section>
 
-    <h3>Messages</h3>
-    <p>
-      <label>Conversation ID</label>
-      <input id="conversation-id" type="text" />
-    </p>
-    <ul id="messages">
-    </ul>
-    <p><button
-      onclick="demo.getMessagesTo(inputVal('conversation-id'), null, null,
-      'messages');"
-    >Fetch messages
-    </button></p>
-    <hr/>
-    <p>
-      <label>Body</label><br />
-      <textarea id="message-content"></textarea>
-    </p>
-    <p>
-      <label>metadata</label><br />
-      <textarea id="message-metadata">{}</textarea>
-    </p>
-    <p>
-      <button
-        onclick="demo.createMessage(inputVal('conversation-id'),
-        inputVal('message-content'),
-        JSON.parse(inputVal('message-metadata')),
+    <section class="chat-messages">
+      <ol class="chat">
+        <li class="other">
+            <div class="avatar"><img src="http://i.imgur.com/DY6gND0.png" draggable="false"/></div>
+          <div class="msg">
+            <p>Hola!</p>
+            <p>Te vienes a cenar al centro? <emoji class="pizza"/></p>
+            <time>20:17</time>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Messages</h3>
+      <p>
+        <label>Conversation ID</label>
+        <input id="conversation-id" type="text" />
+      </p>
+      <ul id="messages">
+      </ul>
+      <p><button
+        onclick="demo.getMessagesTo(inputVal('conversation-id'), null, null,
         'messages');"
-      >Send message
-      </button>
-    </p>
+      >Fetch messages
+      </button></p>
+      <hr/>
+      <p>
+        <textarea id="message-content"></textarea>
+        <button
+          onclick="demo.createMessage(inputVal('conversation-id'),
+          inputVal('message-content'),
+          null, 'messages');"
+        >Send message
+        </button>
+      </p>
+    </section>
     <script>
       var demo = new Demo(skygear, skygear_chat);
       demo.restore();

@@ -17,7 +17,8 @@ class Demo {
     this.usernameEl = $('currentUsername');
     this.emailEl = $('currentEmail');
     this.tokenEl = $('accessToken');
-    this.directConversationEl = $('direct-conversation');
+    this.directConversationEl = $('direct-conversation')
+    this.topbarUsernameEl = $('user-name');
   }
 
   restore() {
@@ -50,6 +51,7 @@ class Demo {
       this.usernameEl.textContent = skygear.currentUser.username;
       this.emailEl.textContent = skygear.currentUser.email;
       this.tokenEl.textContent = this.container.accessToken;
+      this.topbarUsernameEl.textContent = skygear.currentUser.username;
     }
   }
 
@@ -60,29 +62,70 @@ class Demo {
     }.bind(this));
   }
 
+  logoutSkygear() {
+    return this.container.logout().then(() => {
+      console.log('logout successfully');
+      this.usernameEl.textContent = "Not logged in";
+      this.emailEl.textContent = "-";
+      this.tokenEl.textContent = "";
+      this.topbarUsernameEl.textContent = "Not logged in";
+    }, (error) => {
+      console.log('error logging out', error);
+    });
+  }
+
   signupSkygear(username, pw) {
-    return this.container.signupWithUsername(username, pw).then(function (result) {
+    return this.container.signupWithUsername(username, pw).then(function () {
       console.log(result);
       this.displayCurrentUser();
     }.bind(this));
   }
 
   fetchUserTo(el) {
-    var q = new skygear.Query(User);
+    const q = new skygear.Query(User);
     return this.container.publicDB.query(q).then(function (result) {
-      var ul = $(el);
+      const ul = $(el);
       ul.innerHTML = "";
       console.log(result);
       ul.textContent = JSON.stringify(result);
     });
   }
 
+  fetchUserToList(el) {
+    const q = new skygear.Query(User);
+    return this.container.publicDB.query(q).then(function (result) {
+      const ul = $(el);
+      ul.innerHTML = "";
+      console.log(result);
+      for (var item of result) {
+        console.log(item);
+        var li = document.createElement("li");
+        li.innerHTML = ''+item._id+'';
+        ul.appendChild(li);
+      }
+    });
+  }
+
   fetchConversationTo(el) {
     return this.plugin.getConversations().then(function (result) {
-      var ul = $(el);
+      const ul = $(el);
       ul.innerHTML = "";
       console.log(result);
       ul.textContent = JSON.stringify(result);
+    });
+  }
+
+  fetchConversationToList(el) {
+    return this.plugin.getConversations().then(function (result) {
+      const ul = $(el);
+      ul.innerHTML = "";
+      console.log(result);
+      for (var item of result) {
+        console.log(item);
+        var li = document.createElement("li");
+        li.innerHTML = '<a href="message.html?conversation='+item._id+'">'+item._id+'</a>';
+        ul.appendChild(li);
+      }
     });
   }
 
@@ -93,13 +136,13 @@ class Demo {
     }
     return this.plugin.getOrCreateDirectConversation(userID).then(function (result) {
       console.log(result);
-      this.directConversationEl.textContent = result._id;
+      this.directConversationEl.innerHTML = '<a href="message.html?conversation='+result._id+'">'+result._id+'</a>';
     }.bind(this));
   }
 
   getMessagesTo(conversationID, limit, beforeTime, el) {
     return this.plugin.getMessages(conversationID, limit, beforeTime).then(function (result) {
-      var ul = $(el);
+      const ul = $(el);
       ul.innerHTML = "";
       console.log(result);
       ul.textContent = JSON.stringify(result);
@@ -108,7 +151,7 @@ class Demo {
 
   createMessage(conversationID, content, metadata, el) {
     return this.plugin.createMessage(conversationID, content, metadata).then(function (result) {
-      var ul = $(el);
+      const ul = $(el);
       console.log(result);
       ul.textContent = JSON.stringify(result);
     }.bind(this));

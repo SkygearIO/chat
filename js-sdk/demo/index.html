@@ -1,92 +1,148 @@
+<!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="./bundle.js"></script>
     <script src="./demo.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
   </head>
-  <body>
-    <h1>Demo of Skygear Chat plugin with JS-SDK</h1>
-    <p>
-      <label>End Point</label><br/>
-      <input id="endpoint" type="text"
-      value='https://chat.skygeario.com/' />
-    </p>
-    <p>
-      <label>Api Key</label><br/>
-      <input id="api-key" type="text"
-      value='key' />
-    </p>
-    <p>You may got the above value from <a
-      href="https://portal.skygear.io/app/info">Portal</a></p>
-    <p><button
-      onclick="demo.configSkygear(inputVal('endpoint'), inputVal('api-key'),
-      'token');"
-    >Apply End Point
-    </button></p>
-    <p>
-      <label>Token</label>
-      <span id="accessToken"></span>
-    </p>
-    <p>
-      <label>Username</label>
-      <span id="currentUsername"></span>
-    </p>
-    <p>
-      <label>Email</label>
-      <span id="currentEmail"></span>
-    </p>
-    <hr/>
-    <h3>First to login</h3>
-    <form action="#" onsubmit="return false;">
-    <p>
-      <label>Username</label><br/>
-      <input id="username" type="text" />
-    </p>
-    <p>
-      <label>Password</label><br/>
-      <input id="password"  type="password" />
-    </p>
-    <p><button
-      onclick="demo.loginSkygear(inputVal('username'), inputVal('password'));"
-    >Login
-    </button></p>
-    <p><button
-      onclick="demo.signupSkygear(inputVal('username'), inputVal('password'));"
-    >Create user
-    </button></p>
-    </form>
-    <hr/>
-    <h3>Users</h3>
-    <ul id="users">
-    </ul>
-    <p><button
-      onclick="demo.fetchUserTo('users');"
-    >Fetch Users</button></p>
-    <hr/>
-    <h3>Create direct conversation</h3>
-    <p>
-      <label>User ID</label>
-      <input id="direct-user" type="text" />
-    </p>
-    <p><button
-      onclick="demo.createDirectConversation(inputVal('direct-user'))"
-      >Talk to User</button></p>
-    <p id="direct-conversation"></p>
-    <hr/>
-    <h3>Conversation</h3>
-    <ul id="conversation">
-    </ul>
-    <p><button
-      onclick="demo.fetchConversationTo('conversation');"
-    >Fetch Converstion</button></p>
-    <hr/>
-    <h3>Go to converation</h3>
-    <p>
-      <label>Conversation ID</label>
-      <input id="goto-conversation" type="text" />
-    </p>
-    <p><button
-      onclick="window.location='message.html?conversation='+inputVal('goto-conversation');"
-    >Go to conversation</button></p>
+  <body id="main">
+    <div class="menu">
+        <div class="back"> <img src="http://i.imgur.com/DY6gND0.png" draggable="false"/></div>
+        <div class="name" id="user-name">-</div>
+        <div class="last">Demo of Skygear Chat</div>
+    </div>
+
+    <nav class="tab">
+      <input id="tab1" type="radio" name="tabs" class="tab-input" checked>
+      <label for="tab1" class="tab-label"><i class="fa fa-code"></i><span>Settings</span></label>
+
+      <input id="tab2" type="radio" name="tabs" class="tab-input">
+      <label for="tab2" class="tab-label"><i class="fa fa-sign-in"></i><span>Login</span></label>
+
+      <input id="tab3" type="radio" name="tabs" class="tab-input">
+      <label for="tab3" class="tab-label"><i class="fa fa-users"></i><span>User</span></label>
+
+      <input id="tab4" type="radio" name="tabs" class="tab-input">
+      <label for="tab4" class="tab-label"><i class="fa fa-comment-o"></i><span>Conversation</span></label>
+
+      <input id="tab5" type="radio" name="tabs" class="tab-input">
+      <label for="tab5" class="tab-label"><i class="fa fa-list"></i><span>List</span></label>
+      <input id="tab6" type="radio" name="tabs" class="tab-input">
+      <section id="content1" class="settings tab-content">
+        <h3>Settings</h3>
+        <p>
+          <label>End Point</label><br/>
+          <input id="endpoint" type="text"
+          value='https://chatapp.staging.skygeario.com/' />
+        </p>
+        <p>
+          <label>Api Key</label><br/>
+          <input id="api-key" type="text"
+          value='760d10ef77b64ec397dcadd9dcd7ffbd' />
+        </p>
+        <p>You may got the above value from <a
+          href="https://portal.skygear.io/app/info">Portal</a></p>
+        <p><button
+          onclick="demo.configSkygear(inputVal('endpoint'), inputVal('api-key'),
+          'token');"
+        >Apply End Point
+        </button></p>
+        <p>
+          <label>Token</label>
+          <span id="accessToken"></span>
+        </p>
+        <p>
+          <label>Username</label>
+          <span id="currentUsername"></span>
+        </p>
+        <p>
+          <label>Email</label>
+          <span id="currentEmail"></span>
+        </p>
+      
+      </section>
+      <section id="content2" class="login tab-content">
+          <h3>Login / Signup</h3>
+          <form action="#" onsubmit="return false;">
+          <p>
+            <label>Username</label><br/>
+            <input id="username" type="text" />
+          </p>
+          <p>
+            <label>Password</label><br/>
+            <input id="password"  type="password" />
+          </p>
+          <p><button
+            onclick="demo.loginSkygear(inputVal('username'), inputVal('password'));"
+          >Login
+          </button></p>
+          <p><button
+            onclick="demo.signupSkygear(inputVal('username'), inputVal('password'));"
+          >Create user
+          </button></p>
+
+          <p><button onclick="demo.logoutSkygear();"
+          >Logout
+          </button></p>
+          </form>
+      </section>
+
+      <section id="content3" class="user tab-content">
+          <h3>Users</h3>
+          <ul id="users">
+          </ul>
+          <ul id="users-raw">
+          </ul>
+          <p><button
+            onclick="demo.fetchUserToList('users');"
+          >Fetch Users</button></p>
+          <p><button
+            onclick="demo.fetchUserTo('users-raw');"
+          >Fetch Users (Raw)</button></p>
+      </section>
+
+      <section id="content4" class="conversation tab-content">
+          <h3>Create direct conversation</h3>
+          <p>
+            <label>User ID</label>
+            <input id="direct-user" type="text" />
+          </p>
+          <p><button
+            onclick="demo.createDirectConversation(inputVal('direct-user'))"
+            >Talk to User</button></p>
+          <p id="direct-conversation"></p>
+      </section>
+
+      <section id="content5" class="list-conversations tab-content">
+          <h3>List Conversations</h3>
+          <ul id="conversation-raw">
+          </ul>
+          <ul id="conversation">
+          </ul>
+          <p><button
+            onclick="demo.fetchConversationToList('conversation');"
+          >Fetch Converstions</button></p>
+
+          <p><button
+            onclick="demo.fetchConversationTo('conversation-raw');"
+          >Fetch Converstions (in raw)</button></p>
+      </section>
+
+      <section id="content6" class="goto-conversation tab-content">
+          <h3>Go to converation</h3>
+          <p>
+            <label>Conversation ID</label>
+            <input id="goto-conversation" type="text" />
+          </p>
+          <p><button
+            onclick="window.location='message.html?conversation='+inputVal('goto-conversation');"
+          >Fetch Users</button></p>
+      </section>
+    </nav>
+
     <script>
       var demo = new Demo(skygear, skygear_chat);
       demo.restore();
