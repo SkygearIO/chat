@@ -1,6 +1,4 @@
 /* global skygear */
-'use strict';
-
 const uuid = require('uuid');
 const _ = require('underscore');
 

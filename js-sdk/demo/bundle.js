@@ -6,8 +6,6 @@ global.skygear_chat = require('../dist/skygear_chat');
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"../dist/skygear_chat":2,"skygear":48}],2:[function(require,module,exports){
 /* global skygear */
-'use strict';
-
 const uuid = require('uuid');
 const _ = require('underscore');
 

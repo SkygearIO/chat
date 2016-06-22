@@ -6,7 +6,7 @@ var inputVal = function(_id) {
   return $(_id).value;
 }
 
-const User = skygear.Record.extend('user');
+var User = skygear.Record.extend('user');
 
 class Demo {
   constructor(container, plugin) {
@@ -21,11 +21,11 @@ class Demo {
   }
 
   restore() {
-    let endPoint = localStorage.getItem('skygear-endpoint');
+    var endPoint = localStorage.getItem('skygear-endpoint');
     if (endPoint === null) {
       endPoint = 'https://chat.skygeario.com/';
     }
-    let apiKey = localStorage.getItem('skygear-apikey');
+    var apiKey = localStorage.getItem('skygear-apikey');
     if (apiKey === null) {
       apiKey = 'apikey';
     }
@@ -68,9 +68,9 @@ class Demo {
   }
 
   fetchUserTo(el) {
-    const q = new skygear.Query(User);
+    var q = new skygear.Query(User);
     return this.container.publicDB.query(q).then(function (result) {
-      const ul = $(el);
+      var ul = $(el);
       ul.innerHTML = "";
       console.log(result);
       ul.textContent = JSON.stringify(result);
@@ -79,7 +79,7 @@ class Demo {
 
   fetchConversationTo(el) {
     return this.plugin.getConversations().then(function (result) {
-      const ul = $(el);
+      var ul = $(el);
       ul.innerHTML = "";
       console.log(result);
       ul.textContent = JSON.stringify(result);
@@ -99,7 +99,7 @@ class Demo {
 
   getMessagesTo(conversationID, limit, beforeTime, el) {
     return this.plugin.getMessages(conversationID, limit, beforeTime).then(function (result) {
-      const ul = $(el);
+      var ul = $(el);
       ul.innerHTML = "";
       console.log(result);
       ul.textContent = JSON.stringify(result);
@@ -108,7 +108,7 @@ class Demo {
 
   createMessage(conversationID, content, metadata, el) {
     return this.plugin.createMessage(conversationID, content, metadata).then(function (result) {
-      const ul = $(el);
+      var ul = $(el);
       console.log(result);
       ul.textContent = JSON.stringify(result);
     }.bind(this));
