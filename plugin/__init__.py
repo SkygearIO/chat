@@ -133,7 +133,9 @@ def get_messages(conversation_id, limit, before_time=None):
 
     with db.conn() as conn:
         cur = conn.execute('''
-            SELECT _id, _created_at, _created_by, body, conversation_id
+            SELECT
+                _id, _created_at, _created_by,
+                body, conversation_id, metadata
             FROM %(schema_name)s.message
             WHERE conversation_id = %(conversation_id)s
             AND (_created_at < %(before_time)s OR %(before_time)s IS NULL)
@@ -154,7 +156,8 @@ def get_messages(conversation_id, limit, before_time=None):
                 '_created_at': row[1].isoformat(),
                 '_created_by': row[2],
                 'body': row[3],
-                'conversation_id': row[4]
+                'conversation_id': row[4],
+                'metadata': row[5]
             })
 
         return {'results': results}

@@ -49,11 +49,19 @@
     </button></p>
     <hr/>
     <p>
+      <label>Body</label><br />
       <textarea id="message-content"></textarea>
+    </p>
+    <p>
+      <label>metadata</label><br />
+      <textarea id="message-metadata">{}</textarea>
+    </p>
+    <p>
       <button
         onclick="demo.createMessage(inputVal('conversation-id'),
         inputVal('message-content'),
-        null, 'messages');"
+        JSON.parse(inputVal('message-metadata')),
+        'messages');"
       >Send message
       </button>
     </p>
