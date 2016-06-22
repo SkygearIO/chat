@@ -27,7 +27,7 @@ function SkygearChatContainer() {
   };
 
   this.getOrCreateDirectConversation = function(user_id) {
-    const query = skygear.Query(Conversation);
+    const query = new skygear.Query(Conversation);
     query.containsValue('participant_ids', skygear.currentUser.id);
     query.containsValue('participant_ids', user_id);
     query.equalTo('is_direct_message', true);
@@ -45,7 +45,7 @@ function SkygearChatContainer() {
   };
 
   this.getConversation = function(conversation_id) {
-    const query = skygear.Query(Conversation);
+    const query = new skygear.Query(Conversation);
     query.equalTo('_id', conversation_id);
     return skygear.publicDB.query(query).then(function(records) {
       if (records.length > 0) {
@@ -56,7 +56,7 @@ function SkygearChatContainer() {
   };
 
   this.getConversations = function() {
-    const query = skygear.Query(Conversation);
+    const query = new skygear.Query(Conversation);
     query.containsValue('participant_ids', skygear.currentUser.id);
     return skygear.publicDB.query(query);
   };
@@ -184,7 +184,7 @@ function SkygearChatContainer() {
   }
 
   function _getOrCreateLastMessageRead(conversation_id) {
-    const query = skygear.Query(LastMessageRead);
+    const query = new skygear.Query(LastMessageRead);
     query.equalTo('conversation_id', conversation_id);
     query.limit = 1;
     return skygear.privateDB.query(query).then(function(records) {
