@@ -75,7 +75,7 @@ class Demo {
   }
 
   signupSkygear(username, pw) {
-    return this.container.signupWithUsername(username, pw).then(function () {
+    return this.container.signupWithUsername(username, pw).then(function (result) {
       console.log(result);
       this.displayCurrentUser();
     }.bind(this));
