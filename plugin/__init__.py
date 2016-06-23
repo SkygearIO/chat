@@ -21,14 +21,14 @@ class SkygearChatException(Exception):
 
 @skygear.before_save("conversation", async=False)
 def handle_conversation_before_save(record, original_record, conn):
-    if len(record['participant_ids']) == 0:
+    if len(record.get('participant_ids', [])) == 0:
         raise SkygearChatException("no participants")
 
-    if len(record['admin_ids']) == 0 and not record.get('is_direct_message'):
+    if len(record.get('admin_ids', [])) == 0 and not record.get('is_direct_message'):
         raise SkygearChatException("no admin assigned")
 
     if original_record is not None:
-        if current_user_id() not in original_record['admin_ids']:
+        if current_user_id() not in original_record.get('admin_ids', []):
             raise SkygearChatException("no permission to edit conversation")
 
     if original_record is None and record.get('is_direct_message'):
@@ -40,7 +40,7 @@ def handle_conversation_before_save(record, original_record, conn):
             raise SkygearChatException(
                 "direct message must only have two participants")
 
-        record['admin_ids'] = []
+        record['admin_ids'] = record['participant_ids']
 
 
 @skygear.after_save("conversation")
