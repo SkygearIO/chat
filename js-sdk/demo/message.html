@@ -7,11 +7,23 @@
   </head>
   <body id="message">
     <div class="menu">
-        <div class="back"> <img src="http://i.imgur.com/DY6gND0.png" draggable="false"/></div>
-        <div class="name" id="user-name">-</div>
-        <div class="last">Demo of Skygear Chat</div>
+      <div class="back"> <img src="http://i.imgur.com/DY6gND0.png" draggable="false"/></div>
+      <div class="name">
+        <span id="currentUsername"></span>
+        <span id="currentEmail"></span>
+        - Token: 
+        <span id="accessToken"></span>
+      </div>
+    <div class="last">Demo of Skygear Chat</div>
     </div>
-    <section class="settings">
+    <nav class="tab">
+      <input id="tab1" type="radio" name="tabs" class="tab-input">
+      <label for="tab1" class="tab-label"><i class="fa
+              fa-comment-o"></i><span>Messages</span></label>
+    </nav>
+    <br />
+    <section class="chat-messages tab-content">
+      <h3>Messages</h3>
       <p>
         <label>End Point</label><br/>
         <input id="endpoint" type="text"
@@ -25,24 +37,13 @@
           value='key' />
       </p>
       <p>
-        <label>Token</label>
-        <span id="accessToken"></span>
-      </p>
-      <p>
-        <label>Username</label>
-        <span id="currentUsername"></span>
-      </p>
-      <p>
-        <label>Email</label>
-        <span id="currentEmail"></span>
-      </p>
-      <p>
         <a href="./index.html">Go back to conversation list</a>
       </p>
-
-    </section>
-
-    <section class="chat-messages">
+      <p>
+        <label>Conversation ID</label>
+        <input id="conversation-id" type="text" />
+      </p>
+      <hr/>
       <ol class="chat">
         <li class="other">
             <div class="avatar"><img src="http://i.imgur.com/DY6gND0.png" draggable="false"/></div>
@@ -54,11 +55,6 @@
         </li>
       </ol>
 
-      <h3>Messages</h3>
-      <p>
-        <label>Conversation ID</label>
-        <input id="conversation-id" type="text" />
-      </p>
       <ul id="messages">
       </ul>
       <p><button

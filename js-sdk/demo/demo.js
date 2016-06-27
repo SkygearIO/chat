@@ -18,7 +18,6 @@ class Demo {
     this.emailEl = $('currentEmail');
     this.tokenEl = $('accessToken');
     this.directConversationEl = $('direct-conversation')
-    this.topbarUsernameEl = $('user-name');
   }
 
   restore() {
@@ -51,7 +50,6 @@ class Demo {
       this.usernameEl.textContent = skygear.currentUser.username;
       this.emailEl.textContent = skygear.currentUser.email;
       this.tokenEl.textContent = this.container.accessToken;
-      this.topbarUsernameEl.textContent = skygear.currentUser.username;
     }
   }
 
@@ -68,7 +66,6 @@ class Demo {
       this.usernameEl.textContent = "Not logged in";
       this.emailEl.textContent = "-";
       this.tokenEl.textContent = "";
-      this.topbarUsernameEl.textContent = "Not logged in";
     }, (error) => {
       console.log('error logging out', error);
     });
