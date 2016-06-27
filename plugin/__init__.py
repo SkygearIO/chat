@@ -4,14 +4,15 @@ from psycopg2.extensions import AsIs
 
 import skygear
 from skygear import pubsub
+from skygear.options import options
 from skygear.container import SkygearContainer
 from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 container = SkygearContainer()
-container.api_key = os.getenv('API_KEY', "my_skygear_key")
-container.app_name = os.getenv('APP_NAME', "my_skygear_app")
+container.api_key = os.getenv('API_KEY', options.apikey)
+container.app_name = os.getenv('APP_NAME', options.appname)
 schema_name = "app_%s" % container.app_name
 
 
