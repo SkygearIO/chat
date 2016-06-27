@@ -10,6 +10,8 @@ from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
+from .asset import sign_asset_url
+
 container = SkygearContainer()
 container.api_key = os.getenv('API_KEY', options.apikey)
 container.app_name = os.getenv('APP_NAME', options.appname)
@@ -133,11 +135,14 @@ def get_messages(conversation_id, limit, before_time=None):
     if current_user_id() not in conversation['participant_ids']:
         raise SkygearChatException("user not in conversation")
 
+    # FIXME: After the ACL can be by-pass the ACL, we should query the with
+    # master key
+    # https://github.com/SkygearIO/skygear-server/issues/51
     with db.conn() as conn:
         cur = conn.execute('''
             SELECT
                 _id, _created_at, _created_by,
-                body, conversation_id, metadata
+                body, conversation_id, metadata, attachment
             FROM %(schema_name)s.message
             WHERE conversation_id = %(conversation_id)s
             AND (_created_at < %(before_time)s OR %(before_time)s IS NULL)
@@ -153,14 +158,21 @@ def get_messages(conversation_id, limit, before_time=None):
 
         results = []
         for row in cur:
-            results.append({
+            r = {
                 '_id': row[0],
                 '_created_at': row[1].isoformat(),
                 '_created_by': row[2],
                 'body': row[3],
                 'conversation_id': row[4],
-                'metadata': row[5]
-            })
+                'metadata': row[5],
+            }
+            if row[6]: 
+                r['attachment'] = {
+                    '$type': 'asset',
+                    '$name': row[6],
+                    '$url': sign_asset_url(row[6])
+                }
+            results.append(r)
 
         return {'results': results}
 
