@@ -1,13 +1,13 @@
 import os
 
-import skygear
-from skygear.container import SkygearContainer
-from skygear.utils.context import current_user_id
-from skygear.utils import db
-from skygear import pubsub
-from skygear.transmitter.encoding import serialize_record
 from psycopg2.extensions import AsIs
 
+import skygear
+from skygear import pubsub
+from skygear.container import SkygearContainer
+from skygear.transmitter.encoding import serialize_record
+from skygear.utils import db
+from skygear.utils.context import current_user_id
 
 container = SkygearContainer()
 container.api_key = os.getenv('API_KEY', "my_skygear_key")
@@ -24,7 +24,8 @@ def handle_conversation_before_save(record, original_record, conn):
     if len(record.get('participant_ids', [])) == 0:
         raise SkygearChatException("no participants")
 
-    if len(record.get('admin_ids', [])) == 0 and not record.get('is_direct_message'):
+    if len(record['admin_ids']) == 0 \
+            and not record.get('is_direct_message'):
         raise SkygearChatException("no admin assigned")
 
     if original_record is not None:
