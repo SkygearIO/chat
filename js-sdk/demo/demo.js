@@ -106,8 +106,13 @@ class Demo {
     }.bind(this));
   }
 
-  createMessage(conversationID, content, metadata, el) {
-    return this.plugin.createMessage(conversationID, content, metadata).then(function (result) {
+  createMessage(conversationID, content, metadata, asset, el) {
+    return this.plugin.createMessage(
+      conversationID,
+      content,
+      metadata,
+      asset
+     ).then(function (result) {
       var ul = $(el);
       console.log(result);
       ul.textContent = JSON.stringify(result);

@@ -113,7 +113,7 @@ function SkygearChatContainer() {
     });
   };
 
-  this.createMessage = function(conversation_id, body, metadata) {
+  this.createMessage = function(conversation_id, body, metadata, asset) {
     const message = new Message();
     message.conversation_id = conversation_id;
     message.body = body;
@@ -122,6 +122,14 @@ function SkygearChatContainer() {
       message.metadata = {};
     } else {
       message.metadata = metadata;
+    }
+    if (!!asset) {
+      console.log('Have asset');
+      const skyAsset = new skygear.Asset({
+        file: asset,
+        name: asset.name
+      });
+      message['attachment'] = skyAsset;
     }
 
     return skygear.privateDB.save(message);

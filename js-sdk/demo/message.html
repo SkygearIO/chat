@@ -57,10 +57,15 @@
       <textarea id="message-metadata">{}</textarea>
     </p>
     <p>
+      <label>File</label><br />
+      <input type="file" id="message-asset">
+    </p>
+    <p>
       <button
         onclick="demo.createMessage(inputVal('conversation-id'),
         inputVal('message-content'),
         JSON.parse(inputVal('message-metadata')),
+        $('message-asset').files[0],
         'messages');"
       >Send message
       </button>

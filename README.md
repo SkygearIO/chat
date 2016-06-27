@@ -137,7 +137,7 @@ remove admins from a conversation (only admin)
 | participant_ids  | <code>Array</code> | |
 
 
-## createMessage(conversation_id, body, metadata)
+## createMessage(conversation_id, body, metadata, asset)
 send a message to a conversation (only participants)
 
 | Param  | Type                | Description  |
@@ -145,7 +145,8 @@ send a message to a conversation (only participants)
 | conversation_id  | <code>String</code> | |
 | body| <code>String</code> | |
 | metadata| <code>Object</code> | |
-
+| asset | <code>File object</code> |
+ Usually get by document.getElementById('input').files[0] refs: https://developer.mozilla.org/en-US/docs/Web/API/File |
 
 ## getMessages(conversation_id, limit, before_time)
 get messages from a conversation in descending order of created_at
