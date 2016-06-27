@@ -240,6 +240,9 @@ def _get_conversation(conversation_id):
         container._payload('record:query', data)
     )
 
+    if 'error' in response:
+        raise SkygearChatException(response['error'])
+
     if len(response['result']) == 0:
         raise SkygearChatException("no conversation found")
 
