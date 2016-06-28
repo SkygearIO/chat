@@ -42,6 +42,7 @@ class Demo {
       this.endpointEl.value = skygear.endPoint;
       this.apiKeyEl.value = skygear.apiKey;
       this.displayCurrentUser();
+      this.plugin.subscribe(this._handler.bind(this));
     }.bind(this));
   }
 
@@ -117,6 +118,14 @@ class Demo {
       console.log(result);
       ul.textContent = JSON.stringify(result);
     }.bind(this));
+  }
+
+  _handler(data) {
+    if (this.handler) {
+      this.handler(data);
+    } else {
+      console.log(data);
+    }
   }
 }
 

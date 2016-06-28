@@ -6,11 +6,11 @@ import skygear
 from skygear import pubsub
 from skygear.options import options
 from skygear.container import SkygearContainer
-from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .asset import sign_asset_url
+from .encoding import serialize_record
 
 container = SkygearContainer()
 container.api_key = os.getenv('API_KEY', options.apikey)
