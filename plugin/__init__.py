@@ -4,8 +4,8 @@ from psycopg2.extensions import AsIs
 
 import skygear
 from skygear import pubsub
-from skygear.options import options
 from skygear.container import SkygearContainer
+from skygear.options import options
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
