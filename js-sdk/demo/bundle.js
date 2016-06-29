@@ -123,13 +123,12 @@ function SkygearChatContainer() {
     } else {
       message.metadata = metadata;
     }
-    if (!!asset) {
-      console.log('Have asset');
+    if (asset) {
       const skyAsset = new skygear.Asset({
         file: asset,
         name: asset.name
       });
-      message['attachment'] = skyAsset;
+      message.attachment = skyAsset;
     }
 
     return skygear.privateDB.save(message);
