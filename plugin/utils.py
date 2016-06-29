@@ -3,15 +3,17 @@ import os
 from psycopg2.extensions import AsIs
 
 import skygear
-from skygear.options import options
 from skygear.container import SkygearContainer
-
+from skygear.options import options
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
+from .exc import SkygearChatException
+
 container = SkygearContainer()
-container.api_key = os.getenv('API_KEY', options.apikey)
-container.app_name = os.getenv('APP_NAME', options.appname)
+opts = vars(options)
+container.api_key = os.getenv('API_KEY', opts.get('apikey'))
+container.app_name = os.getenv('APP_NAME', opts.get('appname'))
 schema_name = "app_%s" % container.app_name
 
 

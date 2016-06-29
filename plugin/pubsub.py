@@ -3,6 +3,7 @@ from skygear.pubsub import publish
 from .encoding import serialize_record
 from .utils import _get_channel_by_user_id
 
+
 def _publish_event(participant_id, record_type, event_type, record,
                    original_record=None):
     serialize_orig_record = None

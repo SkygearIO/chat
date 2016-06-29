@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import patch
+from skygear.transmitter.encoding import deserialize_record
 
-from chat_plugin import handle_conversation_after_save
+from ..conversation import handle_conversation_after_save
 
 class TestHandleConversationAfterSave(unittest.TestCase):
 
@@ -9,23 +10,29 @@ class TestHandleConversationAfterSave(unittest.TestCase):
         self.conn = None
 
     def record(self):
-        return {
+        return deserialize_record({
+            '_id': 'conversation/1',
+            '_access': None,
+            '_ownerID': 'user1',
             'participant_ids': ['user1', 'user2'],
             'admin_ids': ['user1']
-        }
+        })
 
     def original_record(self):
-        return {
+        return deserialize_record({
+            '_id': 'conversation/1',
+            '_access': None,
+            '_ownerID': 'user1',
             'participant_ids': ['user2', 'user3'],
             'admin_ids': ['user1']
-        }
+        })
 
-    @patch('chat_plugin._publish_event')
+    @patch('plugin.conversation._publish_event')
     def test_newly_created_conversation(self, mock_publish_event):
         handle_conversation_after_save(self.record(), None, self.conn)
         self.assertIs(mock_publish_event.call_count, 2)
 
-    @patch('chat_plugin._publish_event')
+    @patch('plugin.conversation._publish_event')
     def test_newly_created_conversation_with_original_record(
             self, mock_publish_event):
         handle_conversation_after_save(

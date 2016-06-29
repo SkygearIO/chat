@@ -1,10 +1,12 @@
+from psycopg2.extensions import AsIs
+
 import skygear
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .exc import SkygearChatException
-from .utils import _get_conversation
 from .pubsub import _publish_event
+from .utils import schema_name, _get_conversation
 
 
 @skygear.before_save("message", async=False)
@@ -161,4 +163,3 @@ def get_unread_message_count(conversation_id):
             )
 
     return {'count': [row[0] for row in cur][0]}
-

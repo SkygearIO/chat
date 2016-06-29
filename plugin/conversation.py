@@ -1,9 +1,8 @@
 import skygear
-
 from skygear.utils.context import current_user_id
 
-from .pubsub import _publish_event
 from .exc import SkygearChatException
+from .pubsub import _publish_event
 
 
 @skygear.before_save("conversation", async=False)
@@ -57,4 +56,3 @@ def handle_conversation_after_delete(record, conn):
     for p_id in record['participant_ids']:
         _publish_event(
             p_id, "conversation", "delete", record)
-
