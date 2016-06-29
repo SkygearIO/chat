@@ -6,7 +6,6 @@ import skygear
 from skygear.container import SkygearContainer
 from skygear.options import options
 from skygear.utils import db
-from skygear.utils.context import current_user_id
 
 from .exc import SkygearChatException
 

@@ -1,3 +1,3 @@
+# pylama:ignore=W0401,W0611
 from .conversation import *
-from .encoding import serialize_record
 from .message import *

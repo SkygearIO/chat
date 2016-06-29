@@ -30,7 +30,6 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
 
     @patch('plugin.message._get_conversation', Mock(
         return_value={'participant_ids': ['user1', 'user2'],}))
-    @patch('plugin.utils.current_user_id', Mock(return_value='user1'))
     def test_original_record_is_not_none(self):
         with self.assertRaises(SkygearChatException) as cm:
             handle_message_before_save(
@@ -38,7 +37,6 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
 
     @patch('plugin.message._get_conversation', Mock(
         return_value={'participant_ids': ['user2', 'user3'],}))
-    @patch('plugin.utils.current_user_id', Mock(return_value='user1'))
     def test_user_not_in_conversation(self):
         with self.assertRaises(SkygearChatException) as cm:
             handle_message_before_save(

@@ -4,9 +4,10 @@ import skygear
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
+from .asset import sign_asset_url
 from .exc import SkygearChatException
 from .pubsub import _publish_event
-from .utils import schema_name, _get_conversation
+from .utils import _get_conversation, schema_name
 
 
 @skygear.before_save("message", async=False)
@@ -100,7 +101,7 @@ def get_messages(conversation_id, limit, before_time=None):
                 'conversation_id': row[4],
                 'metadata': row[5],
             }
-            if row[6]: 
+            if row[6]:
                 r['attachment'] = {
                     '$type': 'asset',
                     '$name': row[6],
