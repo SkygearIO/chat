@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/SkygearIO/chat.svg)](https://travis-ci.org/SkygearIO/chat)
+
 # Skygear-chat
 Chat addon to provide common operation
 
