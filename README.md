@@ -44,15 +44,12 @@ def chat_demo():
 
 ### Understanding the model
 
-In this chat plugin, we have 3 model. It responsibility as follow.
+In this chat plugin, we have 2 model. It responsibility as follow.
 
 - Conversation - storing information on who is the admins, conversation title,
   last message arrival time, etc.
 - Message - actual message to be display on screen, including the related
   asset and metadata.
-- UserConversation - the exist of this relation represent a user is participand
-  of a conversation. It store information on user specific information to a
-  conversation, like last read time and unread count.
 
 For API detail, please visit the platform specific API filie:
 
