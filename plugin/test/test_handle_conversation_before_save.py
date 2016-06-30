@@ -43,12 +43,12 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
                 record, self.original_record(), self.conn)
 
     @patch('plugin.conversation.current_user_id', Mock(return_value="user1"))
-    def test_no_admins(self):
+    def test_all_participant_is_admin_if_no_admins_provided(self):
         record = self.record()
         record['admin_ids'] = []
-        with self.assertRaises(SkygearChatException) as cm:
-            handle_conversation_before_save(
-                record, self.original_record(), self.conn)
+        handle_conversation_before_save(
+            record, self.original_record(), self.conn)
+        self.assertCountEqual(record['admin_ids'], record['participant_ids'])
 
     @patch('plugin.conversation.current_user_id', Mock(return_value="user1"))
     def test_create_direct_message_for_others(self):

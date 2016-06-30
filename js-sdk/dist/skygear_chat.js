@@ -15,7 +15,11 @@ function SkygearChatContainer() {
     const conversation = new Conversation();
     conversation.title = title;
     conversation.participant_ids = _.unique(participant_ids);
-    conversation.admin_ids = _.unique(admin_ids);
+    if (_.isEmpty(admin_ids)) {
+      conversation.admin_ids = conversation.participant_ids;
+    } else {
+      conversation.admin_ids = _.unique(admin_ids);
+    }
     return skygear.publicDB.save(conversation);
   };
 
@@ -31,7 +35,7 @@ function SkygearChatContainer() {
       }
       const conversation = new Conversation();
       conversation.participant_ids = [skygear.currentUser.id, user_id];
-      conversation.admin_ids = [];
+      conversation.admin_ids = conversation.participant_ids;
       conversation.is_direct_message = true;
       return skygear.publicDB.save(conversation);
     });
