@@ -15,6 +15,8 @@ container.api_key = os.getenv('API_KEY', opts.get('apikey'))
 container.app_name = os.getenv('APP_NAME', opts.get('appname'))
 schema_name = "app_%s" % container.app_name
 
+MASTER_KEY = os.getenv('MASTER_KEY', opts.get('masterkey'))
+
 
 def _get_conversation(conversation_id):
     data = {

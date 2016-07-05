@@ -1,8 +1,10 @@
 import skygear
+from skygear.models import DirectAccessControlEntry, PublicAccessControlEntry
 from skygear.utils.context import current_user_id
 
 from .exc import SkygearChatException
 from .pubsub import _publish_event
+from .user_conversation import UserConversation
 
 
 @skygear.before_save("conversation", async=False)
@@ -16,6 +18,9 @@ def handle_conversation_before_save(record, original_record, conn):
         record['admin_ids'] = record['participant_ids']
     if len(record.get('admin_ids', [])) == 0:
         record['admin_ids'] = record['participant_ids']
+    if not set(record['participant_ids']) >= set(record['admin_ids']):
+        raise SkygearChatException(
+            "admins should also be participants")
 
     is_new = original_record is None
     # Check permission
@@ -23,25 +28,45 @@ def handle_conversation_before_save(record, original_record, conn):
         if current_user_id() not in original_record.get('admin_ids', []):
             raise SkygearChatException("no permission to edit conversation")
 
-    if is_new and record.get('is_direct_message'):
+    if is_new:
         if current_user_id() not in record['participant_ids']:
             raise SkygearChatException(
-                "cannot create direct conversations for other users")
+                "cannot create conversations for other users")
+
+    # Set the correct ACL at server side
+    record._acl = [PublicAccessControlEntry('read')]
+    for admin_id in record['admin_ids']:
+        if admin_id in record['participant_ids']:
+            record.acl.append(DirectAccessControlEntry(admin_id, 'write'))
+
+
+@skygear.after_save("conversation", async=False)
+def handle_conversation_after_save(record, original_record, conn):
+    if original_record is None:
+        orig_participant = set()
+    else:
+        orig_participant = set(original_record['participant_ids'])
+    participant = set(record['participant_ids'])
+
+    # Create and remove
+    uc = UserConversation(record.id)
+    to_create = participant - orig_participant
+    uc.create(to_create)
+    to_delete = orig_participant - participant
+    uc.delete(to_delete)
 
 
 @skygear.after_save("conversation")
-def handle_conversation_after_save(record, original_record, conn):
-    if original_record is None:
-        for p_id in record['participant_ids']:
-            _publish_event(
-                p_id, "conversation", "create",
-                record, original_record)
+def pubsub_conversation_after_save(record, original_record, conn):
+    p_ids = set(record['participant_ids'])
+    if original_record is not None:
+        orig_participant = set(original_record['participant_ids'])
+        p_ids = p_ids | orig_participant
 
-    else:
-        p_ids = record['participant_ids'] + original_record['participant_ids']
-        for p_id in set(p_ids):
-            _publish_event(
-                p_id, "conversation", "update", record, original_record)
+    # Notification
+    for p_id in p_ids:
+        _publish_event(
+            p_id, "conversation", "update", record, original_record)
 
 
 @skygear.before_delete("conversation", async=False)

@@ -32,14 +32,32 @@
     <p>
       <a href="./index.html">Go back to conversation list</a>
     </p>
-
     <hr/>
-
-    <h3>Messages</h3>
     <p>
       <label>Conversation ID</label>
       <input id="conversation-id" type="text" />
     </p>
+    <hr/>
+
+    <h3>Participant</h3>
+    <p>
+      <label>User ID</label>
+      <input id="participant-id" type="text" />
+    </p>
+    <p><button
+      onclick="demo.addParticipant(inputVal('conversation-id'),
+      inputVal('participant-id'),
+      'messages');"
+    >Add
+    </button></p>
+    <p><button
+      onclick="demo.removeParticipant(inputVal('conversation-id'),
+      inputVal('participant-id'),
+      'messages');"
+    >Remove
+    </button></p>
+    <hr/>
+    <h3>Messages</h3>
     <ul id="messages">
     </ul>
     <p><button

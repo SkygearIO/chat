@@ -72,6 +72,28 @@
       >Talk to User</button></p>
     <p id="direct-conversation"></p>
     <hr/>
+    <h3>Create group conversation</h3>
+    <p>
+      <label>User 1</label>
+      <input id="group-user1" type="text" />
+    </p>
+    <p>
+      <label>User 2</label>
+      <input id="group-user2" type="text" />
+    </p>
+    <p>
+      <label>User 3</label>
+      <input id="group-user3" type="text" />
+    </p>
+    <p><button
+      onclick="demo.createConversation(
+        inputVal('group-user1'),
+        inputVal('group-user2'),
+        inputVal('group-user3')
+      )"
+      >Create group with above user</button></p>
+    <p id="group-conversation"></p>
+    <hr/>
     <h3>Conversation</h3>
     <ul id="conversation">
     </ul>

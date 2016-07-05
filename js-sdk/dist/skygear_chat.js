@@ -87,6 +87,8 @@ function SkygearChatContainer() {
     return this.getConversation(conversation_id).then(function(conversation) {
       conversation.participant_ids = _.difference(
           _.unique(conversation.participant_ids), participant_ids);
+      conversation.admin_ids = _.difference(
+          _.unique(conversation.admin_ids), participant_ids);
 
       return skygear.publicDB.save(conversation);
     });
