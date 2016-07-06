@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from skygear.transmitter.encoding import deserialize_record
 
-from ..conversation import handle_conversation_after_save
+from ..conversation import pubsub_conversation_after_save
 
 class TestHandleConversationAfterSave(unittest.TestCase):
 
@@ -28,13 +28,13 @@ class TestHandleConversationAfterSave(unittest.TestCase):
         })
 
     @patch('plugin.conversation._publish_event')
-    def test_newly_created_conversation(self, mock_publish_event):
-        handle_conversation_after_save(self.record(), None, self.conn)
+    def test_pubsub_newly_created_conversation(self, mock_publish_event):
+        pubsub_conversation_after_save(self.record(), None, self.conn)
         self.assertIs(mock_publish_event.call_count, 2)
 
     @patch('plugin.conversation._publish_event')
-    def test_newly_created_conversation_with_original_record(
+    def test_pubsub_newly_created_conversation_with_original_record(
             self, mock_publish_event):
-        handle_conversation_after_save(
+        pubsub_conversation_after_save(
             self.record(), self.original_record(), self.conn)
         self.assertIs(mock_publish_event.call_count, 3)

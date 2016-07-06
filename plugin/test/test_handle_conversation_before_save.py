@@ -2,7 +2,11 @@ import unittest
 from unittest.mock import patch, Mock
 from skygear.transmitter.encoding import deserialize_record
 
-from ..conversation import handle_conversation_before_save, SkygearChatException
+from ..conversation import (
+    handle_conversation_before_save,
+    SkygearChatException,
+    validate_conversation,
+)
 
 
 class TestHandleConversationBeforeSave(unittest.TestCase):
@@ -19,7 +23,6 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
             'admin_ids': ['user1']
         })
 
-
     def original_record(self):
         return deserialize_record({
             '_id': 'conversation/1',
@@ -28,6 +31,23 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
             'participant_ids': ['user1', 'user2'],
             'admin_ids': ['user1']
         })
+
+    def invalid_record(self):
+        return deserialize_record({
+            '_id': 'conversation/invalid',
+            '_access': None,
+            '_ownerID': 'user1',
+            'participant_ids': ['user1', 'user2'],
+            'admin_ids': ['user10']
+        })
+
+    def test_conversation_valiate_ok(self):
+        validate_conversation(self.record())
+        validate_conversation(self.original_record())
+
+    def test_conversation_admins_not_paticipant(self):
+        with self.assertRaises(SkygearChatException) as cm:
+            validate_conversation(self.invalid_record())
 
     @patch('plugin.conversation.current_user_id', Mock(return_value="user1"))
     def test_with_valid_record(self):

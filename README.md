@@ -50,6 +50,10 @@ In this chat plugin, we have 2 model. It responsibility as follow.
   last message arrival time, etc.
 - Message - actual message to be display on screen, including the related
   asset and metadata.
+- UserConversation - the exist of this relation represent a user is participant
+  of a conversation. It store information on user specific information to a
+  conversation, like last read time and unread count.
+
 
 For API detail, please visit the platform specific API filie:
 

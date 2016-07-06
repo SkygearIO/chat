@@ -18,6 +18,7 @@ class Demo {
     this.emailEl = $('currentEmail');
     this.tokenEl = $('accessToken');
     this.directConversationEl = $('direct-conversation');
+    this.groupConversationEl = $('group-conversation');
   }
 
   restore() {
