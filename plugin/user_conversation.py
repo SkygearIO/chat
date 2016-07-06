@@ -7,7 +7,7 @@ from .utils import MASTER_KEY
 
 
 class UserConversation():
-    def __init__(self, conversation_id, master_key=MASTER_KEY):
+    def __init__(self, conversation_id: 'RecordID', master_key=MASTER_KEY):
         self.conversation_id = conversation_id
         self.conversation_ref = {
             '$type': 'ref',
