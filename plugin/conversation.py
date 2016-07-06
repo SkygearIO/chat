@@ -43,6 +43,16 @@ def validate_conversation(record):
         raise SkygearChatException(
             "admins should also be participants")
 
+    for user_id in record.get('participant_ids', []):
+        validate_user_id(user_id)
+    for user_id in record.get('admin_ids', []):
+        validate_user_id(user_id)
+
+
+def validate_user_id(user_id):
+    if user_id.startswith('user/'):
+        raise SkygearChatException("user_id is not in correct format")
+
 
 @skygear.after_save("conversation", async=False)
 def handle_conversation_after_save(record, original_record, conn):

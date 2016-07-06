@@ -49,6 +49,17 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
         with self.assertRaises(SkygearChatException) as cm:
             validate_conversation(self.invalid_record())
 
+    def test_conversation__paticipant_id_format(self):
+        wrong_user_id = deserialize_record({
+            '_id': 'conversation/wronguserid',
+            '_access': None,
+            '_ownerID': 'user1',
+            'participant_ids': ['user/user1', 'user/user2'],
+            'admin_ids': []
+        })
+        with self.assertRaises(SkygearChatException) as cm:
+            validate_conversation(wrong_user_id)
+
     @patch('plugin.conversation.current_user_id', Mock(return_value="user1"))
     def test_with_valid_record(self):
         handle_conversation_before_save(
