@@ -9,26 +9,18 @@ from .user_conversation import UserConversation
 
 @skygear.before_save("conversation", async=False)
 def handle_conversation_before_save(record, original_record, conn):
-    if len(record.get('participant_ids', [])) == 0:
-        raise SkygearChatException("converation must have participant")
+    validate_conversation(record)
     if record.get('is_direct_message'):
-        if len(record['participant_ids']) != 2:
-            raise SkygearChatException(
-                "direct message must only have two participants")
         record['admin_ids'] = record['participant_ids']
     if len(record.get('admin_ids', [])) == 0:
         record['admin_ids'] = record['participant_ids']
-    if not set(record['participant_ids']) >= set(record['admin_ids']):
-        raise SkygearChatException(
-            "admins should also be participants")
 
     is_new = original_record is None
     # Check permission
     if not is_new:
         if current_user_id() not in original_record.get('admin_ids', []):
             raise SkygearChatException("no permission to edit conversation")
-
-    if is_new:
+    else:
         if current_user_id() not in record['participant_ids']:
             raise SkygearChatException(
                 "cannot create conversations for other users")
@@ -38,6 +30,18 @@ def handle_conversation_before_save(record, original_record, conn):
     for admin_id in record['admin_ids']:
         if admin_id in record['participant_ids']:
             record.acl.append(DirectAccessControlEntry(admin_id, 'write'))
+
+
+def validate_conversation(record):
+    if len(record.get('participant_ids', [])) == 0:
+        raise SkygearChatException("converation must have participant")
+    if record.get('is_direct_message'):
+        if len(record['participant_ids']) != 2:
+            raise SkygearChatException(
+                "direct message must only have two participants")
+    if not set(record['participant_ids']) >= set(record['admin_ids']):
+        raise SkygearChatException(
+            "admins should also be participants")
 
 
 @skygear.after_save("conversation", async=False)
