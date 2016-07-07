@@ -10,6 +10,7 @@ const uuid = require('uuid');
 const _ = require('underscore');
 
 const Conversation = skygear.Record.extend('conversation');
+const UserConversation = skygear.Record.extend('user_conversation');
 const Message = skygear.Record.extend('message');
 const UserChannel = skygear.Record.extend('user_channel');
 const LastMessageRead = skygear.Record.extend('last_message_read');
@@ -60,9 +61,11 @@ function SkygearChatContainer() {
   };
 
   this.getConversations = function() {
-    const query = new skygear.Query(Conversation);
-    query.containsValue('participant_ids', skygear.currentUser.id);
-    return skygear.publicDB.query(query);
+    const query = new skygear.Query(UserConversation);
+    query.equalTo('user', skygear.currentUser.id);
+    query.transientInclude('user');
+    query.transientInclude('conversation');
+    return skygear.privateDB.query(query);
   };
 
   this.deleteConversation = function(conversation_id) {
