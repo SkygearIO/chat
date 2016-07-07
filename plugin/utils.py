@@ -4,6 +4,7 @@ from psycopg2.extensions import AsIs
 
 import skygear
 from skygear.container import SkygearContainer
+from skygear.models import Reference, RecordID
 from skygear.options import options
 from skygear.utils import db
 
@@ -19,6 +20,11 @@ MASTER_KEY = os.getenv('MASTER_KEY', opts.get('masterkey'))
 
 
 def _get_conversation(conversation_id):
+    # conversation_id can be Reference, recordID or string
+    if isinstance(conversation_id, Reference):
+        conversation_id = conversation_id.recordID.key
+    if isinstance(conversation_id, RecordID):
+        conversation_id = conversation_id.key
     data = {
         'database_id': '_public',
         'record_type': 'conversation',

@@ -14,8 +14,9 @@ from .utils import _get_conversation, schema_name
 def handle_message_before_save(record, original_record, conn):
     conversation = _get_conversation(record['conversation_id'])
 
-    if current_user_id() not in conversation['participant_ids']:
-        raise SkygearChatException("user not in conversation")
+    if current_user_id() not in conversation.get('participant_ids', []):
+        raise SkygearChatException(
+            "user not in conversation, permission denied")
 
     if original_record is not None:
         raise SkygearChatException("message is not editable")

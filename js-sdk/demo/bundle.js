@@ -121,7 +121,9 @@ function SkygearChatContainer() {
 
   this.createMessage = function(conversation_id, body, metadata, asset) {
     const message = new Message();
-    message.conversation_id = conversation_id;
+    message.conversation_id = new skygear.Reference(
+      'conversation/' + conversation_id
+    );
     message.body = body;
 
     if (metadata === undefined || metadata === null) {
