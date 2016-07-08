@@ -4,7 +4,7 @@ from psycopg2.extensions import AsIs
 
 import skygear
 from skygear.container import SkygearContainer
-from skygear.models import Reference, RecordID
+from skygear.models import RecordID, Reference
 from skygear.options import options
 from skygear.utils import db
 
