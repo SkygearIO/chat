@@ -20,12 +20,14 @@ before_install:
 
 install:
   - (cd ./js-sdk; npm install)
+  - (cd ./js-sdk; npm install localStorage)
 
 script:
   - pylama plugin
   - lizard plugin -C 10 -w -i 0
   - nosetests
   - (cd ./js-sdk; npm run lint)
+  - (cd ./js-sdk; npm test)
 
 notifications:
   slack:
