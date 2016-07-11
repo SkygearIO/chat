@@ -140,6 +140,11 @@ function SkygearChatContainer() {
     return skygear.privateDB.save(message);
   };
 
+  this.getUnreadCount = function() {
+    return skygear
+      .lambda('chat:total_unread');
+  };
+
   this.getMessages = function(conversation_id, limit, before_time) {
     return skygear
       .lambda('chat:get_messages', [conversation_id, limit, before_time])

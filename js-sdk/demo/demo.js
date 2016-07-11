@@ -79,6 +79,15 @@ class Demo {
     });
   }
 
+  fetchUnreadCountTo(conversationEl, messageEl) {
+    return this.plugin.getUnreadCount().then(function (result) {
+      var cEl = $(conversationEl);
+      cEl.textContent = result.conversation;
+      var mEl = $(messageEl);
+      mEl.textContent = result.message;
+    });
+  }
+
   fetchConversationTo(conversationID, el) {
     return this.plugin.getConversation(conversationID).then(function (result) {
       var ul = $(el);

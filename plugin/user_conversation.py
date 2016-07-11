@@ -5,8 +5,33 @@ from psycopg2.extensions import AsIs
 
 import skygear
 from skygear.container import SkygearContainer
+from skygear.utils import db
+from skygear.utils.context import current_user_id
 
 from .utils import MASTER_KEY, schema_name
+
+
+@skygear.op("chat:total_unread", auth_required=True, user_required=True)
+def total_unread():
+    user_id = current_user_id()
+    with db.conn() as conn:
+        cur = conn.execute('''
+            SELECT COUNT(*), SUM("unread_count")
+            FROM %(schema_name)s.user_conversation
+            WHERE
+                "unread_count" > 0 AND
+                "user" = %(user_id)s
+        ''', {
+            'schema_name': AsIs(schema_name),
+            'user_id': user_id
+        })
+        r = cur.first()
+        conversation_count = r[0]
+        message_count = r[1]
+    return {
+        'conversation': conversation_count,
+        'message': message_count
+    }
 
 
 @skygear.before_save("user_conversation", async=False)

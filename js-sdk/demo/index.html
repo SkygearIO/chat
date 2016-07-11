@@ -62,6 +62,21 @@
       onclick="demo.fetchUserTo('users');"
     >Fetch Users</button></p>
     <hr/>
+    <h3>Current user unread count</h3>
+    <ul id="users">
+    </ul>
+    <p><button
+      onclick="demo.fetchUnreadCountTo('conversation-unread', 'message-unread');"
+    >Fetch Unread Count</button></p>
+    <p>
+      <label>Conversation</label>
+      <span id="conversation-unread"></span>
+    </p>
+    <p>
+      <label>Message</label>
+      <span id="message-unread"></span>
+    </p>
+    <hr/>
     <h3>Create direct conversation</h3>
     <p>
       <label>User ID</label>
