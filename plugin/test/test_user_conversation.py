@@ -37,7 +37,8 @@ class TestUserConversation(unittest.TestCase):
                     '_id':
                     'user_conversation/5e0069ae-1fe3-9680-5512-332b363bbc73',
                     'conversation': {'$id': 'conversation/1', '$type': 'ref'},
-                    'user': {'$id': 'user/userid', '$type': 'ref'}
+                    'user': {'$id': 'user/userid', '$type': 'ref'},
+                    'unread_count': 0
                 }]
             }
         ))

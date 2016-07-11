@@ -6,7 +6,6 @@ const Conversation = skygear.Record.extend('conversation');
 const UserConversation = skygear.Record.extend('user_conversation');
 const Message = skygear.Record.extend('message');
 const UserChannel = skygear.Record.extend('user_channel');
-const LastMessageRead = skygear.Record.extend('last_message_read');
 
 function SkygearChatContainer() {
   this.createConversation = function(
@@ -43,9 +42,12 @@ function SkygearChatContainer() {
   };
 
   this.getConversation = function(conversation_id) {
-    const query = new skygear.Query(Conversation);
-    query.equalTo('_id', conversation_id);
-    return skygear.publicDB.query(query).then(function(records) {
+    const query = new skygear.Query(UserConversation);
+    query.equalTo('user', skygear.currentUser.id);
+    query.equalTo('conversation', conversation_id);
+    query.transientInclude('user');
+    query.transientInclude('conversation');
+    return skygear.privateDB.query(query).then(function(records) {
       if (records.length > 0) {
         return records[0];
       }
@@ -151,18 +153,16 @@ function SkygearChatContainer() {
   };
 
   this.markAsLastMessageRead = function(conversation_id, message_id) {
-    return _getOrCreateLastMessageRead(conversation_id).then(
-      function(record) {
-        record.message_id = message_id;
-        return skygear.privateDB.save(record);
-      });
+    return _getUserConversation(conversation_id).then(function(uc) {
+      uc.last_read_message = new skygear.Reference('message/' + message_id);
+      return skygear.privateDB.save(uc);
+    });
   };
 
   this.getUnreadMessageCount = function(conversation_id) {
-    return skygear.lambda('chat:get_unread_message_count', [conversation_id])
-      .then(function(data) {
-        return data.count;
-      });
+    return _getUserConversation(conversation_id).then(function(uc) {
+      return uc.unread_count;
+    });
   };
 
   this.subscribe = function(handler) {
@@ -194,17 +194,16 @@ function SkygearChatContainer() {
     });
   }
 
-  function _getOrCreateLastMessageRead(conversation_id) {
-    const query = new skygear.Query(LastMessageRead);
-    query.equalTo('conversation_id', conversation_id);
-    query.limit = 1;
-    return skygear.privateDB.query(query).then(function(records) {
+  function _getUserConversation(conversation_id) {
+    const ucQuery = new skygear.Query(UserConversation);
+    ucQuery.equalTo('user', skygear.currentUser.id);
+    ucQuery.equalTo('conversation', conversation_id);
+    ucQuery.limit = 1;
+    return skygear.privateDB.query(ucQuery).then(function(records) {
       if (records.length > 0) {
         return records[0];
       }
-      const record = new LastMessageRead();
-      record.conversation_id = conversation_id;
-      return skygear.privateDB.save(record);
+      throw new Error('No UserConversation found');
     });
   }
 }

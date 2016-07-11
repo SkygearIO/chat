@@ -37,6 +37,12 @@
       <label>Conversation ID</label>
       <input id="conversation-id" type="text" />
     </p>
+    <p><button
+      onclick="demo.fetchConversationTo(inputVal('conversation-id'),
+      'conversation-detail');"
+    >Fetch User Conversation Details
+    </button></p>
+    <p id="conversation-detail"><p>
     <hr/>
 
     <h3>Participant</h3>
@@ -65,6 +71,19 @@
       'messages');"
     >Fetch messages
     </button></p>
+    <hr/>
+    <h3>Mark as last read</h3>
+    <p>
+      <label>Last Read Message ID</label>
+      <input id="last-read" type="text" />
+    </p>
+    <p><button
+      onclick="demo.markAsLastRead(inputVal('conversation-id'),
+      inputVal('last-read'),
+      'last-read-result');"
+    >Mark this as last read message
+    </button></p>
+    <p id="last-read-result"></p>
     <hr/>
     <p>
       <label>Body</label><br />

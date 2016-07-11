@@ -79,7 +79,15 @@ class Demo {
     });
   }
 
-  fetchConversationTo(el) {
+  fetchConversationTo(conversationID, el) {
+    return this.plugin.getConversation(conversationID).then(function (result) {
+      var ul = $(el);
+      console.log(result);
+      ul.textContent = JSON.stringify(result);
+    });
+  }
+
+  fetchConversationsTo(el) {
     return this.plugin.getConversations().then(function (result) {
       var ul = $(el);
       ul.innerHTML = "";
@@ -97,6 +105,36 @@ class Demo {
       console.log(result);
       this.directConversationEl.textContent = result._id;
     }.bind(this));
+  }
+
+  createConversation(user1, user2, user3) {
+    return this.plugin.createConversation(
+        [user1, user2, user3],
+        null,
+        'From Demo'
+      ).then(function (result) {
+      console.log(result);
+      this.groupConversationEl.textContent = result._id;
+    }.bind(this));
+  }
+
+  addParticipant(conversationID, userID) {
+    return this.plugin.addParticipants(conversationID, [userID]).then(function (result) {
+      console.log(result);
+    });
+  }
+
+  removeParticipant(conversationID, userID) {
+    return this.plugin.removeParticipants(conversationID, [userID]).then(function (result) {
+      console.log(result);
+    });
+  }
+
+  markAsLastRead(conversationID, messageID, el) {
+    return this.plugin.markAsLastMessageRead(conversationID, messageID).then(function (result) {
+      var rEl = $(el);
+      rEl.textContent = JSON.stringify(result);
+    });
   }
 
   getMessagesTo(conversationID, limit, beforeTime, el) {

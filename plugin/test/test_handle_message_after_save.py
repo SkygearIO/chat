@@ -15,7 +15,10 @@ class TestHandleMessageAfterSave(unittest.TestCase):
             '_id': 'message/1',
             '_access': None,
             '_ownerID': 'user1',
-            'conversation_id': 'conversation1',
+            'conversation_id': {
+                '$type': 'ref',
+                '$id': 'conversation/1'
+            },
             'body': 'hihi'
         })
 
@@ -24,7 +27,10 @@ class TestHandleMessageAfterSave(unittest.TestCase):
             '_id': 'message/1',
             '_access': None,
             '_ownerID': 'user1',
-            'conversation_id': 'conversation1',
+            'conversation_id': {
+                '$type': 'ref',
+                '$id': 'conversation/1'
+            },
             'body': 'hihi'
         })
 
@@ -33,7 +39,9 @@ class TestHandleMessageAfterSave(unittest.TestCase):
         'participant_ids': ['user1', 'user2']}))
     def test_publish_event_count(
             self, mock_publish_event):
-
+        conn = Mock()
         handle_message_after_save(
-            self.record(), self.original_record(), self.conn)
+            self.record(), self.original_record(), conn)
         self.assertIs(mock_publish_event.call_count, 2)
+        self.assertIs(conn.execute.call_count, 1)
+        self.assertIs(conn.execute.call_args[0][1]['conversation_id'], '1')

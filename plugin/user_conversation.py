@@ -1,9 +1,44 @@
 import hashlib
 import uuid
 
+from psycopg2.extensions import AsIs
+
+import skygear
 from skygear.container import SkygearContainer
 
-from .utils import MASTER_KEY
+from .utils import MASTER_KEY, schema_name
+
+
+@skygear.before_save("user_conversation", async=False)
+def populate_unread_count(record, orig, conn):
+    if orig is None:
+        return
+    if record.get('last_read_message') == orig.get('last_read_message'):
+        return
+
+    conversation = record.get('conversation')
+    last_read_message = record.get('last_read_message')
+    if last_read_message is None:
+        return
+
+    cur = conn.execute('''
+        SELECT COUNT(*)
+        FROM %(schema_name)s.message
+        WHERE
+            "conversation_id" = %(conversation_id)s AND
+            "_created_at" > (
+                SELECT "_created_at" FROM %(schema_name)s.message
+                WHERE "_id" = %(last_read_message)s
+            )
+        ''', {
+        'schema_name': AsIs(schema_name),
+        'conversation_id': conversation.recordID.key,
+        'last_read_message': last_read_message.recordID.key,
+    }
+    )
+    r = cur.first()
+    record['unread_count'] = r[0]
+    return record
 
 
 class UserConversation():
@@ -33,7 +68,8 @@ class UserConversation():
                         '$type': 'ref',
                         '$id': 'user/' + user_id
                     },
-                    'conversation': self.conversation_ref
+                    'conversation': self.conversation_ref,
+                    'unread_count': 0
                 }]
             })
 
