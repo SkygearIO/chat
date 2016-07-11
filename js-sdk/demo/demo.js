@@ -108,8 +108,14 @@ class Demo {
   }
 
   createConversation(user1, user2, user3) {
+    let users = [];
+    [user1, user2, user3].map(function (u) {
+      if (u) {
+        users.push(u);
+      }
+    });
     return this.plugin.createConversation(
-        [user1, user2, user3],
+        users,
         null,
         'From Demo'
       ).then(function (result) {
