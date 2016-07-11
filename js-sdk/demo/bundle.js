@@ -13,7 +13,6 @@ const Conversation = skygear.Record.extend('conversation');
 const UserConversation = skygear.Record.extend('user_conversation');
 const Message = skygear.Record.extend('message');
 const UserChannel = skygear.Record.extend('user_channel');
-const LastMessageRead = skygear.Record.extend('last_message_read');
 
 function SkygearChatContainer() {
   this.createConversation = function(
@@ -161,14 +160,14 @@ function SkygearChatContainer() {
   };
 
   this.markAsLastMessageRead = function(conversation_id, message_id) {
-    return _getUserConversation(conversation_id).then(function (uc) {
+    return _getUserConversation(conversation_id).then(function(uc) {
       uc.last_read_message = new skygear.Reference('message/' + message_id);
       return skygear.privateDB.save(uc);
     });
   };
 
   this.getUnreadMessageCount = function(conversation_id) {
-    return _getUserConversation(conversation_id).then(function (uc) {
+    return _getUserConversation(conversation_id).then(function(uc) {
       return uc.unread_count;
     });
   };
