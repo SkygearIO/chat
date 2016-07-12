@@ -1,6 +1,7 @@
 from psycopg2.extensions import AsIs
 
 import skygear
+import strict_rfc3339
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
@@ -70,9 +71,11 @@ def get_messages(conversation_id, limit, before_time=None):
 
         results = []
         for row in cur:
+            created_stamp = row[1].timestamp()
+            dt = strict_rfc3339.timestamp_to_rfc3339_utcoffset(created_stamp)
             r = {
                 '_id': row[0],
-                '_created_at': row[1].isoformat(),
+                '_created_at': dt,
                 '_created_by': row[2],
                 'body': row[3],
                 'conversation_id': row[4],
