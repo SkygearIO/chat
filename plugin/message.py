@@ -1,7 +1,7 @@
+import strict_rfc3339
 from psycopg2.extensions import AsIs
 
 import skygear
-import strict_rfc3339
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
