@@ -86,9 +86,10 @@ class UserConversation():
                                          user_id=user_id)
             uc_uid = self.consistent_hash(user_id)
             container.send_action('record:save', {
-                'database_id': '_private',
+                'database_id': '_public',
                 'records': [{
                     '_id': 'user_conversation/' + str(uc_uid),
+                    '_access': [],
                     'user': {
                         '$type': 'ref',
                         '$id': 'user/' + user_id
@@ -104,6 +105,6 @@ class UserConversation():
                                          user_id=user_id)
             uc_uid = self.consistent_hash(user_id)
             container.send_action('record:delete', {
-                'database_id': '_private',
+                'database_id': '_public',
                 'ids': ['user_conversation/' + str(uc_uid)]
             })

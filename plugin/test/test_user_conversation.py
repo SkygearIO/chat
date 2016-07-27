@@ -32,10 +32,11 @@ class TestUserConversation(unittest.TestCase):
         self.assertEqual(container.method_calls[0][1], (
             'record:save',
             {
-                'database_id': '_private',
+                'database_id': '_public',
                 'records': [{
                     '_id':
                     'user_conversation/5e0069ae-1fe3-9680-5512-332b363bbc73',
+                    '_access': [],
                     'conversation': {'$id': 'conversation/1', '$type': 'ref'},
                     'user': {'$id': 'user/userid', '$type': 'ref'},
                     'unread_count': 0
@@ -58,7 +59,7 @@ class TestUserConversation(unittest.TestCase):
         self.assertEqual(container.method_calls[0][1], (
             'record:delete',
             {
-                'database_id': '_private',
+                'database_id': '_public',
                 'ids': ['user_conversation/5e0069ae-1fe3-9680-5512-332b363bbc73']
             }
         ))

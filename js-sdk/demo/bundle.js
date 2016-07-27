@@ -54,7 +54,7 @@ function SkygearChatContainer() {
     query.equalTo('conversation', conversation_id);
     query.transientInclude('user');
     query.transientInclude('conversation');
-    return skygear.privateDB.query(query).then(function(records) {
+    return skygear.publicDB.query(query).then(function(records) {
       if (records.length > 0) {
         return records[0];
       }
@@ -67,7 +67,7 @@ function SkygearChatContainer() {
     query.equalTo('user', skygear.currentUser.id);
     query.transientInclude('user');
     query.transientInclude('conversation');
-    return skygear.privateDB.query(query);
+    return skygear.publicDB.query(query);
   };
 
   this.deleteConversation = function(conversation_id) {
@@ -149,7 +149,7 @@ function SkygearChatContainer() {
 
   this.getUnreadCount = function() {
     return skygear
-      .lambda('chat:total_unread')
+      .lambda('chat:total_unread');
   };
 
   this.getMessages = function(conversation_id, limit, before_time) {
@@ -211,7 +211,7 @@ function SkygearChatContainer() {
     ucQuery.equalTo('user', skygear.currentUser.id);
     ucQuery.equalTo('conversation', conversation_id);
     ucQuery.limit = 1;
-    return skygear.privateDB.query(ucQuery).then(function(records) {
+    return skygear.publicDB.query(ucQuery).then(function(records) {
       if (records.length > 0) {
         return records[0];
       }
