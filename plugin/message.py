@@ -78,7 +78,10 @@ def get_messages(conversation_id, limit, before_time=None):
                 '_created_at': dt,
                 '_created_by': row[2],
                 'body': row[3],
-                'conversation_id': row[4],
+                'conversation_id': {
+                    '$id': 'conversation/' + row[4],
+                    '$type': 'ref'
+                },
                 'metadata': row[5],
             }
             if row[6]:
