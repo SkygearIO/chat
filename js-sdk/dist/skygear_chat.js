@@ -161,10 +161,9 @@ function SkygearChatContainer() {
     return skygear
       .lambda('chat:get_messages', [conversation_id, limit, before_time])
       .then(function(data) {
-        for (var i = 0; i < data.results.length; i++) {
-          data.results[i]._created_at = new Date(
-            data.results[i]._created_at);
-        }
+        data.results = data.results.map(function(message_data) {
+          return new Message(message_data);
+        });
         return data;
       });
   };
@@ -187,8 +186,11 @@ function SkygearChatContainer() {
       skygear.pubsub.connect();
       skygear.off(channel.name);
       skygear.on(channel.name, function(data) {
-        data.record = data.record;
-        data.original_record = data.original_record;
+        data.record = new skygear.Record(data.record_type, data.record);
+        if (data.original_record) {
+          data.original_record = new skygear.Record(
+            data.record_type, data.original_record);
+        }
         handler(data);
       });
     });

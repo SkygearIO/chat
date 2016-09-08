@@ -74,7 +74,7 @@ def get_messages(conversation_id, limit, before_time=None):
             created_stamp = row[1].timestamp()
             dt = strict_rfc3339.timestamp_to_rfc3339_utcoffset(created_stamp)
             r = {
-                '_id': row[0],
+                '_id': 'message/' + row[0],
                 '_created_at': dt,
                 '_created_by': row[2],
                 'body': row[3],
