@@ -179,7 +179,7 @@ function SkygearChatContainer() {
   this.markAsLastMessageRead = function(conversation_id, message_id) {
     return _getUserConversation(conversation_id).then(function(uc) {
       uc.last_read_message = new skygear.Reference('message/' + message_id);
-      return skygear.privateDB.save(uc);
+      return skygear.publicDB.save(uc);
     });
   };
 
