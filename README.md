@@ -41,6 +41,12 @@ def chat_demo():
 
 `https://<your_app_name>.skygeario.com/static/demo/index.html`
 
+__Fourth__
+
+Update database schema
+
+`curl https://<your_app_name>.skygeario.com/chat-plugin-init`
+
 
 ### Understanding the model
 
