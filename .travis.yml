@@ -13,7 +13,6 @@ before_install:
   - pip install pylama
   - pip install lizard
   - pip install nose
-  - pip install -r plugin/requirements.txt
   - nvm install 5.1
   - node -v
   - npm -v
@@ -23,9 +22,9 @@ install:
   - (cd ./js-sdk; npm install localStorage)
 
 script:
-  - pylama plugin
-  - lizard plugin -C 10 -w -i 0
-  - nosetests
+  - pylama chat
+  - lizard chat -C 10 -w -i 0
+  - python setup.py test
   - (cd ./js-sdk; npm run lint)
   - (cd ./js-sdk; npm test)
 
