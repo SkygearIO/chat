@@ -34,8 +34,8 @@ class TestHandleMessageAfterSave(unittest.TestCase):
             'body': 'hihi'
         })
 
-    @patch('plugin.message._publish_event')
-    @patch('plugin.message._get_conversation', Mock(return_value={
+    @patch('chat.message._publish_event')
+    @patch('chat.message._get_conversation', Mock(return_value={
         'participant_ids': ['user1', 'user2']}))
     def test_publish_event_count(
             self, mock_publish_event):
