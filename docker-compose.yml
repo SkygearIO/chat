@@ -39,12 +39,13 @@ services:
       #GOMAXPROCS: 1
   
   plugin:
-    build: ./plugin
+    build:
+      context: .
     links:
     - app
     - db
     volumes:
-    - ./plugin:/usr/src/app
+    - ./:/usr/src/app
     command: py-skygear __init__.py
     environment:
       DATABASE_URL: postgresql://postgres:@db:5432/postgres?sslmode=disable 
