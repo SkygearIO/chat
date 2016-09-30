@@ -23,7 +23,7 @@ class TestUserConversation(unittest.TestCase):
         self.assertEqual(str(r), str(r2))
         self.assertNotEqual(str(r), str(another))
 
-    @patch('plugin.user_conversation.SkygearContainer', autospec=True)
+    @patch('chat.user_conversation.SkygearContainer', autospec=True)
     def test_create(self, container):
         uc = UserConversation(self.conversation().id)
         uc.create(['userid'])
@@ -44,13 +44,13 @@ class TestUserConversation(unittest.TestCase):
             }
         ))
 
-    @patch('plugin.user_conversation.SkygearContainer', autospec=True)
+    @patch('chat.user_conversation.SkygearContainer', autospec=True)
     def test_create_multiple(self, container):
         uc = UserConversation(self.conversation().id)
         uc.create(['userid', 'userid2'])
         self.assertEqual(len(container.method_calls), 2)
 
-    @patch('plugin.user_conversation.SkygearContainer', autospec=True)
+    @patch('chat.user_conversation.SkygearContainer', autospec=True)
     def test_delete(self, container):
         uc = UserConversation(self.conversation().id)
         uc.delete(['userid'])
@@ -64,7 +64,7 @@ class TestUserConversation(unittest.TestCase):
             }
         ))
 
-    @patch('plugin.user_conversation.SkygearContainer', autospec=True)
+    @patch('chat.user_conversation.SkygearContainer', autospec=True)
     def test_delete_multiple(self, container):
         uc = UserConversation(self.conversation().id)
         uc.delete(['userid', 'userid2'])

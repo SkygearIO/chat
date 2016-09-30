@@ -1,7 +1,5 @@
 [![Build Status](https://travis-ci.org/SkygearIO/chat.svg)](https://travis-ci.org/SkygearIO/chat)
-
-# Skygear-chat
-Chat addon to provide common operation
+# Chat Plugin for Skygear
 
 ### Get the demo running at Skygear cloud 
 
@@ -31,7 +29,7 @@ Tell Skygear cloud to serve the asset from demo folder
 from skygear import static_assets
 from skygear.utils.assets import relative_assets
 
-from .chat import plugin as chat_plugin
+from .chat import *
 
 
 @static_assets(prefix='demo')

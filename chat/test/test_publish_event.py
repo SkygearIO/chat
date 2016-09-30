@@ -16,8 +16,8 @@ class TestPublishEvent(unittest.TestCase):
             'body': 'hihi'
         })
 
-    @patch('plugin.pubsub.publish')
-    @patch('plugin.pubsub._get_channel_by_user_id')
+    @patch('chat.pubsub.publish')
+    @patch('chat.pubsub._get_channel_by_user_id')
     def test_pubsub_publish_called(
         self, mock_publish, mock_get_channel_by_user_id):
         mock_get_channel_by_user_id.return_value = 'channel1'

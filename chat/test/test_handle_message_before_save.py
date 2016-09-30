@@ -28,14 +28,14 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
             'body': 'hihi'
         })
 
-    @patch('plugin.message._get_conversation', Mock(
+    @patch('chat.message._get_conversation', Mock(
         return_value={'participant_ids': ['user1', 'user2'],}))
     def test_original_record_is_not_none(self):
         with self.assertRaises(SkygearChatException) as cm:
             handle_message_before_save(
                 self.record(), self.original_record(), self.conn)
 
-    @patch('plugin.message._get_conversation', Mock(
+    @patch('chat.message._get_conversation', Mock(
         return_value={'participant_ids': ['user2', 'user3'],}))
     def test_user_not_in_conversation(self):
         with self.assertRaises(SkygearChatException) as cm:
