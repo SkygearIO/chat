@@ -2,7 +2,6 @@ import os
 
 from psycopg2.extensions import AsIs
 
-import skygear
 from skygear.container import SkygearContainer
 from skygear.models import RecordID, Reference
 from skygear.options import options
@@ -40,10 +39,7 @@ def _get_conversation(conversation_id):
             conversation_id]
     }
 
-    response = skygear.container.send_action(
-        container._request_url('record:query'),
-        container._payload('record:query', data)
-    )
+    response = container.send_action('record:query', data)
 
     if 'error' in response:
         raise SkygearChatException(response['error'])
