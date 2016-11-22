@@ -26,6 +26,16 @@ Internal method to be called automatically on SDK on client calling
 `getMessages`. *Or we can do it at python side*
 - `_markAsDelivery([messages])`
 
+`message.conversationStatus`. This attributes is updated by the python plugin.
+Having following possible value:
+
+- `delivery` - server got the message but no read receipt
+- `some_read` - server got one of the read receipt from user
+- `all_read` - server got all read receipt from all user
+
+When this `conversationStatus` is updated. You will get a message update
+notification if you did `subscribe` to your channel. (See pubsub.md)
+
 # Receipt
 
 Receipt is a Skygear Record point to User and Message, storing the message

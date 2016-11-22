@@ -22,7 +22,7 @@ format is as follow:
 The pubsub channel is based on `conversation_id`
 
 - sendTypingIndicator(conversation, state)
-- subscribeTypingIndicator(conversation, callback)
+- subscribeTypingIndicator(conversation, callback(payload))
 - unsubscribeTypingIndicator(conversation)
 
 Application developer should call `sendTypingIndicator`. With status `begin`,
@@ -46,3 +46,17 @@ display the typing status. The callback will received payload as follow:
 Normally, you will not call `sendTypingIndicator` yourself, we provided helper
 to bind to the input event that will send the event. You just subscribe the
 indicator event in your application code.
+
+# Message Receipt
+
+This is PLANING. Not to implement in v2.
+
+The pubsub channel is based on `user_id`
+
+- subscribeReceipt(callback([Receipts])))
+
+The behaviour is:
+
+- When a receipts on a message is created/updated.
+- plugin will collect all receipts on that message.
+- send all receipts to the callback as array.
