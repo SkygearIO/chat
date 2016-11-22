@@ -19,9 +19,12 @@ getMessage is a lambda that will return the Receipt info together if any.
 
 # Read/Unread Message
 - markAsRead([messages])
-- markAsDelivery([messages])
 - markAsLastMessageRead(conversation, message)
 - getUnreadMessageCount(conversation)
+
+Internal method to be called automatically on SDK on client calling
+`getMessages`. *Or we can do it at python side*
+- `_markAsDelivery([messages])`
 
 # Receipt
 
@@ -31,5 +34,21 @@ delivery status. The status can be `delivered` and `read`.
 Related API:
 - getReceipt(message)
 
+It will return an array of receipt object like following
+
+```
+[{
+  'user_id': 'uuid',
+  'read_at': '20161116T18:44:00Z'
+},
+{
+  ...
+}]
+```
+
 Q: Not sure we need `getReceipts([message])` (Never see a interface design
 need it.)
+
+This API is intended for querying individual message receipts. If you are
+looking for display individual user read til which message. Please check out
+`UserConversation` section.

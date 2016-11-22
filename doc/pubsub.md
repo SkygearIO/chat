@@ -42,3 +42,7 @@ display the typing status. The callback will received payload as follow:
   }
 }
 ```
+
+Normally, you will not call `sendTypingIndicator` yourself, we provided helper
+to bind to the input event that will send the event. You just subscribe the
+indicator event in your application code.

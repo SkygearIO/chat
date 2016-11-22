@@ -7,9 +7,13 @@ conversation).
 If your app don't need two level of access control. Just use the participant
 API. Removing user from participant will remove it from admins automatically.
 
+If your app is public channel, you can set the ACL of the conversation object
+to be public.
+
 Related API:
 
-- createConversation(participants, title, options)
+- createConversation(participants, title, meta, options)
+- createDirectConversation(participant, title, meta, options)
 - deleteConversation(conversation)
 - updateConversation(conversation)
 - addParticipants(conversation, participants)
@@ -20,21 +24,29 @@ Related API:
 
 ## Creating a conversation
 
-`createConversation(participants, title, options)`
+`createConversation(participants, title, meta, options)`
 
-available options:
-- distinctByParticipants (boolean, default to true)
+`meta` is a JSON attributes for app specific data.
+`options` is have following options:
+- distinctByParticipants (boolean, default to false)
 - admins ([user], default to all participants)
 
 Duplicate call of `createConversation` with same list of participants will
-return the same conversation, unless `distinctByParticipants` in options is set
-to `false`. When `distinctByParticipants` is set to `false`, every call to 
-`createConversation` will create a new conversation.
+return the different conversation, unless `distinctByParticipants` in options is
+set to `true`.
 
 Adding or removing participants from a distinct conversation (see below) makes
 it non-distinct.
 
 All participant will be admin unless specific in `options.admins`
+
+In common use case, one to one conversation is special. So we provided a
+helper function for creating unique direct conversation.
+
+`createDirectConversation(participant, title, meta)`
+
+This helper function will create conversation with `distinctByParticipants`
+set to `true`.
 
 # Querying UserConversation
 
@@ -50,3 +62,15 @@ Related API:
 Return a list of `UserConversation` object with transient include
 `conversation` and `user`.
 
+# Querying participants conversation last read
+
+- getLastReadMessage(conversation)
+
+Return a list of `user_id` to `message_id` mapping.
+
+```
+{
+  'user/id1': 'message/uuid1',
+  'user/id2': 'message/uuis2'
+}
+```
