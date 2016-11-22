@@ -1,5 +1,5 @@
-import strict_rfc3339
 from psycopg2.extensions import AsIs
+from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 import skygear
 from skygear.utils import db
@@ -8,10 +8,9 @@ from skygear.utils.context import current_user_id
 from .asset import sign_asset_url
 from .exc import SkygearChatException
 from .pubsub import _publish_event
-from .utils import _get_conversation, schema_name
+from .utils import _get_conversation, _get_schema_name
 
 
-@skygear.before_save("message", async=False)
 def handle_message_before_save(record, original_record, conn):
     conversation = _get_conversation(record['conversation_id'])
 
@@ -23,7 +22,6 @@ def handle_message_before_save(record, original_record, conn):
         raise SkygearChatException("message is not editable")
 
 
-@skygear.after_save("message")
 def handle_message_after_save(record, original_record, conn):
     conversation = _get_conversation(record['conversation_id'])
     for p_id in conversation['participant_ids']:
@@ -36,12 +34,11 @@ def handle_message_after_save(record, original_record, conn):
         SET "unread_count" = "unread_count" + 1
         WHERE "conversation" = %(conversation_id)s
     ''', {
-        'schema_name': AsIs(schema_name),
+        'schema_name': AsIs(_get_schema_name()),
         'conversation_id': conversation_id
     })
 
 
-@skygear.op("chat:get_messages", auth_required=True, user_required=True)
 def get_messages(conversation_id, limit, before_time=None):
     conversation = _get_conversation(conversation_id)
 
@@ -62,17 +59,17 @@ def get_messages(conversation_id, limit, before_time=None):
             ORDER BY _created_at DESC
             LIMIT %(limit)s;
             ''', {
-            'schema_name': AsIs(schema_name),
-            'conversation_id': conversation_id,
-            'before_time': before_time,
-            'limit': limit
-        }
+                'schema_name': AsIs(_get_schema_name()),
+                'conversation_id': conversation_id,
+                'before_time': before_time,
+                'limit': limit
+            }
         )
 
         results = []
         for row in cur:
             created_stamp = row[1].timestamp()
-            dt = strict_rfc3339.timestamp_to_rfc3339_utcoffset(created_stamp)
+            dt = timestamp_to_rfc3339_utcoffset(created_stamp)
             r = {
                 '_id': 'message/' + row[0],
                 '_created_at': dt,
@@ -93,3 +90,19 @@ def get_messages(conversation_id, limit, before_time=None):
             results.append(r)
 
         return {'results': results}
+
+
+def register_message_hooks(settings):
+    @skygear.before_save("message", async=False)
+    def message_before_save_handler(record, original_record, conn):
+        return handle_message_before_save(record, original_record, conn)
+
+    @skygear.after_save("message")
+    def message_after_save_handler(record, original_record, conn):
+        return handle_message_after_save(record, original_record, conn)
+
+
+def register_message_lambdas(settings):
+    @skygear.op("chat:get_messages", auth_required=True, user_required=True)
+    def get_messages_lambda(conversation_id, limit, before_time=None):
+        return get_messages(conversation_id, limit, before_time)

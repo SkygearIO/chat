@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 from skygear.transmitter.encoding import deserialize_record
 
-from ..conversation import handle_conversation_before_delete, SkygearChatException
+from ..conversation import (SkygearChatException,
+                            handle_conversation_before_delete)
+
 
 class TestHandleConversationBeforeDelete(unittest.TestCase):
 

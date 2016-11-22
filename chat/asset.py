@@ -1,15 +1,12 @@
 import base64
 import hashlib
 import hmac
-import os
 from datetime import datetime, timedelta
 
-ASSET_PREFIX_KEY = 'ASSET_STORE_URL_PREFIX'
-ASSET_SIGN_SECRET_KEY = 'ASSET_STORE_SECRET'
-
-_config = os.environ
+from skygear.skyconfig import config as skygear_config
 
 
+# TODO: This does not fit cloud deployment. Need to be removed.
 def sign_asset_url(name):
     """
     This helper function generates a signed S3 URL to access the Asset
@@ -35,8 +32,8 @@ def sign_asset_url(name):
 
 
 def _asset_prefix():
-    return os.getenv(ASSET_PREFIX_KEY, 'http://localhost:3000/')
+    return skygear_config.asset_signer.url_prefix
 
 
 def _sign_secret():
-    return os.getenv(ASSET_SIGN_SECRET_KEY, '')
+    return skygear_config.asset_signer.secret

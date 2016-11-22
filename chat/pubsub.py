@@ -1,4 +1,5 @@
-from skygear.pubsub import publish
+from skygear.pubsub import Hub
+from skygear.skyconfig import config as skygear_config
 
 from .encoding import serialize_record
 from .utils import _get_channel_by_user_id
@@ -19,4 +20,5 @@ def _publish_event(participant_id, record_type, event_type, record,
     channel_name = _get_channel_by_user_id(participant_id)
 
     if channel_name:
-        publish(channel_name, data)
+        hub = Hub(api_key=skygear_config.app.api_key)
+        hub.publish(channel_name, data)
