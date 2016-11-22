@@ -29,7 +29,9 @@ Internal method to be called automatically on SDK on client calling
 `message.conversationStatus`. This attributes is updated by the python plugin.
 Having following possible value:
 
-- `delivery` - server got the message but no read receipt
+- `delivering` - status that the message is still not read the server(i.e.
+  this value is SDK only. server will always start with `delivered`)
+- `delivered` - server got the message but no read receipt
 - `some_read` - server got one of the read receipt from user
 - `all_read` - server got all read receipt from all user
 
