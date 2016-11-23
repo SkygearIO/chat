@@ -1,21 +1,15 @@
-import os
-
 from psycopg2.extensions import AsIs
 
 from skygear.container import SkygearContainer
 from skygear.models import RecordID, Reference
-from skygear.options import options
+from skygear.skyconfig import config as skygear_config
 from skygear.utils import db
 
 from .exc import SkygearChatException
 
-container = SkygearContainer()
-opts = vars(options)
-container.api_key = os.getenv('API_KEY', opts.get('apikey'))
-container.app_name = os.getenv('APP_NAME', opts.get('appname'))
-schema_name = "app_%s" % container.app_name
 
-MASTER_KEY = os.getenv('MASTER_KEY', opts.get('masterkey'))
+def _get_schema_name():
+    return "app_%s" % skygear_config.app.name
 
 
 def _get_conversation(conversation_id):
@@ -24,22 +18,26 @@ def _get_conversation(conversation_id):
         conversation_id = conversation_id.recordID.key
     if isinstance(conversation_id, RecordID):
         conversation_id = conversation_id.key
-    data = {
-        'database_id': '_public',
-        'record_type': 'conversation',
-        'limit': 1,
-        'sort': [],
-        'include': {},
-        'count': False,
-        'predicate': [
-            'eq', {
-                '$type': 'keypath',
-                '$val': '_id'
-            },
-            conversation_id]
-    }
 
-    response = container.send_action('record:query', data)
+    container = SkygearContainer(api_key=skygear_config.app.api_key)
+    response = container.send_action(
+        'record:query',
+        {
+            'database_id': '_public',
+            'record_type': 'conversation',
+            'limit': 1,
+            'sort': [],
+            'include': {},
+            'count': False,
+            'predicate': [
+                'eq', {
+                    '$type': 'keypath',
+                    '$val': '_id'
+                },
+                conversation_id
+            ]
+        }
+    )
 
     if 'error' in response:
         raise SkygearChatException(response['error'])
@@ -61,7 +59,7 @@ def _get_channel_by_user_id(user_id):
             WHERE _owner_id = %(user_id)s
             LIMIT 1;
             ''', {
-            'schema_name': AsIs(schema_name),
+            'schema_name': AsIs(_get_schema_name()),
             'user_id': user_id
         }
         )
@@ -79,7 +77,7 @@ def _check_if_table_exists(tablename):
         cur = conn.execute('''
             SELECT to_regclass(%(name)s)
             ''', {
-            'name': schema_name + "." + tablename,
+            'name': _get_schema_name() + "." + tablename,
         })
         results = []
         for row in cur:

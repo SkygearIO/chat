@@ -1,8 +1,10 @@
 import unittest
 from unittest.mock import patch
+
 from skygear.transmitter.encoding import deserialize_record
 
 from ..conversation import pubsub_conversation_after_save
+
 
 class TestHandleConversationAfterSave(unittest.TestCase):
 

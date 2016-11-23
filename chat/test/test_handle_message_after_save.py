@@ -1,5 +1,6 @@
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
 from skygear.transmitter.encoding import deserialize_record
 
 from ..message import handle_message_after_save
@@ -35,6 +36,7 @@ class TestHandleMessageAfterSave(unittest.TestCase):
         })
 
     @patch('chat.message._publish_event')
+    @patch('chat.message._get_schema_name', Mock(return_value='app_dev'))
     @patch('chat.message._get_conversation', Mock(return_value={
         'participant_ids': ['user1', 'user2']}))
     def test_publish_event_count(

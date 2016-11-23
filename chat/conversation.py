@@ -7,7 +7,28 @@ from .pubsub import _publish_event
 from .user_conversation import UserConversation
 
 
-@skygear.before_save("conversation", async=False)
+def validate_conversation(record):
+    if len(record.get('participant_ids', [])) == 0:
+        raise SkygearChatException("converation must have participant")
+    if record.get('is_direct_message'):
+        if len(record['participant_ids']) != 2:
+            raise SkygearChatException(
+                "direct message must only have two participants")
+    if not set(record['participant_ids']) >= set(record['admin_ids']):
+        raise SkygearChatException(
+            "admins should also be participants")
+
+    for user_id in record.get('participant_ids', []):
+        validate_user_id(user_id)
+    for user_id in record.get('admin_ids', []):
+        validate_user_id(user_id)
+
+
+def validate_user_id(user_id):
+    if user_id.startswith('user/'):
+        raise SkygearChatException("user_id is not in correct format")
+
+
 def handle_conversation_before_save(record, original_record, conn):
     validate_conversation(record)
     if record.get('is_direct_message'):
@@ -32,29 +53,6 @@ def handle_conversation_before_save(record, original_record, conn):
             record.acl.append(DirectAccessControlEntry(admin_id, 'write'))
 
 
-def validate_conversation(record):
-    if len(record.get('participant_ids', [])) == 0:
-        raise SkygearChatException("converation must have participant")
-    if record.get('is_direct_message'):
-        if len(record['participant_ids']) != 2:
-            raise SkygearChatException(
-                "direct message must only have two participants")
-    if not set(record['participant_ids']) >= set(record['admin_ids']):
-        raise SkygearChatException(
-            "admins should also be participants")
-
-    for user_id in record.get('participant_ids', []):
-        validate_user_id(user_id)
-    for user_id in record.get('admin_ids', []):
-        validate_user_id(user_id)
-
-
-def validate_user_id(user_id):
-    if user_id.startswith('user/'):
-        raise SkygearChatException("user_id is not in correct format")
-
-
-@skygear.after_save("conversation", async=False)
 def handle_conversation_after_save(record, original_record, conn):
     if original_record is None:
         orig_participant = set()
@@ -70,7 +68,6 @@ def handle_conversation_after_save(record, original_record, conn):
     uc.delete(to_delete)
 
 
-@skygear.after_save("conversation")
 def pubsub_conversation_after_save(record, original_record, conn):
     p_ids = set(record['participant_ids'])
     if original_record is not None:
@@ -83,14 +80,34 @@ def pubsub_conversation_after_save(record, original_record, conn):
             p_id, "conversation", "update", record, original_record)
 
 
-@skygear.before_delete("conversation", async=False)
 def handle_conversation_before_delete(record, conn):
     if current_user_id() not in record['admin_ids']:
         raise SkygearChatException("no permission to delete conversation")
 
 
-@skygear.after_delete("conversation")
 def handle_conversation_after_delete(record, conn):
     for p_id in record['participant_ids']:
         _publish_event(
             p_id, "conversation", "delete", record)
+
+
+def register_conversation_hooks(settings):
+    @skygear.before_save("conversation", async=False)
+    def conversation_before_save_handler(record, original_record, conn):
+        return handle_conversation_before_save(record, original_record, conn)
+
+    @skygear.after_save("conversation", async=False)
+    def conversation_after_save_handler(record, original_record, conn):
+        return handle_conversation_after_save(record, original_record, conn)
+
+    @skygear.after_save("conversation")
+    def conversation_after_save_pubsub_handler(record, original_record, conn):
+        return pubsub_conversation_after_save(record, original_record, conn)
+
+    @skygear.before_delete("conversation", async=False)
+    def conversation_before_delete_handler(record, conn):
+        return handle_conversation_before_delete(record, conn)
+
+    @skygear.after_delete("conversation")
+    def conversation_after_delete_handler(record, conn):
+        return handle_conversation_after_delete(record, conn)

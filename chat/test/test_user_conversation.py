@@ -1,5 +1,6 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+
 from skygear.transmitter.encoding import deserialize_record
 
 from ..conversation import UserConversation
@@ -15,6 +16,8 @@ class TestUserConversation(unittest.TestCase):
             'admin_ids': ['user1']
         })
 
+    @patch('chat.user_conversation.skygear_config',
+           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_consistent_hash(self):
         uc = UserConversation(self.conversation().id)
         r = uc.consistent_hash('itwillbesha256')
@@ -24,6 +27,8 @@ class TestUserConversation(unittest.TestCase):
         self.assertNotEqual(str(r), str(another))
 
     @patch('chat.user_conversation.SkygearContainer', autospec=True)
+    @patch('chat.user_conversation.skygear_config',
+           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_create(self, container):
         uc = UserConversation(self.conversation().id)
         uc.create(['userid'])
@@ -45,12 +50,16 @@ class TestUserConversation(unittest.TestCase):
         ))
 
     @patch('chat.user_conversation.SkygearContainer', autospec=True)
+    @patch('chat.user_conversation.skygear_config',
+           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_create_multiple(self, container):
         uc = UserConversation(self.conversation().id)
         uc.create(['userid', 'userid2'])
         self.assertEqual(len(container.method_calls), 2)
 
     @patch('chat.user_conversation.SkygearContainer', autospec=True)
+    @patch('chat.user_conversation.skygear_config',
+           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_delete(self, container):
         uc = UserConversation(self.conversation().id)
         uc.delete(['userid'])
@@ -65,6 +74,8 @@ class TestUserConversation(unittest.TestCase):
         ))
 
     @patch('chat.user_conversation.SkygearContainer', autospec=True)
+    @patch('chat.user_conversation.skygear_config',
+           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_delete_multiple(self, container):
         uc = UserConversation(self.conversation().id)
         uc.delete(['userid', 'userid2'])

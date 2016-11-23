@@ -1,8 +1,9 @@
 import unittest
 from unittest.mock import Mock, patch
+
 from skygear.transmitter.encoding import deserialize_record
 
-from ..message import handle_message_before_save, SkygearChatException
+from ..message import SkygearChatException, handle_message_before_save
 
 
 class TestHandleMessageBeforeSave(unittest.TestCase):

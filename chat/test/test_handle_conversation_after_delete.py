@@ -1,8 +1,10 @@
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
 from skygear.transmitter.encoding import deserialize_record
 
 from ..conversation import handle_conversation_after_delete
+
 
 class TestHandleConversationAfterDelete(unittest.TestCase):
 
