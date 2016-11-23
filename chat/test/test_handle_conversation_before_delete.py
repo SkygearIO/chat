@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from skygear.transmitter.encoding import deserialize_record
 
@@ -11,6 +11,14 @@ class TestHandleConversationBeforeDelete(unittest.TestCase):
 
     def setUp(self):
         self.conn = None
+        self.patcher = patch('chat.conversation.skygear_config',
+                             Mock(return_value={
+                                'app': {'master_key': 'secret'}
+                             }))
+        self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
 
     def record(self):
         return deserialize_record({
@@ -21,13 +29,13 @@ class TestHandleConversationBeforeDelete(unittest.TestCase):
             'admin_ids': ['user1']
         })
 
-    @patch('chat.conversation.current_user_id')
-    def test_delete_conversation_with_no_permission(self, mock_current_user_id):
-        mock_current_user_id.return_value = 'user2'
+    @patch('chat.conversation.current_user_id',
+           Mock(return_value='user2'))
+    def test_delete_conversation_with_no_permission(self):
         with self.assertRaises(SkygearChatException) as cm:
             handle_conversation_before_delete(self.record(), self.conn)
 
-    @patch('chat.conversation.current_user_id')
-    def test_delete_conversation_with_permission(self, mock_current_user_id):
-        mock_current_user_id.return_value = 'user1'
+    @patch('chat.conversation.current_user_id',
+           Mock(return_value='user1'))
+    def test_delete_conversation_with_permission(self):
         handle_conversation_before_delete(self.record(), self.conn)

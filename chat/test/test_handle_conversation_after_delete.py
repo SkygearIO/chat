@@ -21,6 +21,8 @@ class TestHandleConversationAfterDelete(unittest.TestCase):
         })
 
     @patch('chat.conversation._publish_event')
+    @patch('chat.conversation.skygear_config',
+           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_publish_event_count_should_be_three(self, mock_publish_event):
         handle_conversation_after_delete(self.record(), self.conn)
         self.assertIs(mock_publish_event.call_count, 3)

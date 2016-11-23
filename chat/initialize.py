@@ -39,7 +39,15 @@ def register_initialization_event_handlers(settings):
                                 'type': 'json'
                             },
                             {
-                                'name': 'is_direct_message',
+                                'name': 'participant_count',
+                                'type': 'number'
+                            },
+                            {
+                                'name': 'metadata',
+                                'type': 'json'
+                            },
+                            {
+                                'name': 'distinct_by_participants',
                                 'type': 'boolean'
                             }
                         ]

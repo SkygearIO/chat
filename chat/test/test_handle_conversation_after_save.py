@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from skygear.transmitter.encoding import deserialize_record
 
@@ -10,6 +10,14 @@ class TestHandleConversationAfterSave(unittest.TestCase):
 
     def setUp(self):
         self.conn = None
+        self.patcher = patch('chat.conversation.skygear_config',
+                             Mock(return_value={
+                                'app': {'master_key': 'secret'}
+                             }))
+        self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
 
     def record(self):
         return deserialize_record({

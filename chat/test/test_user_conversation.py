@@ -7,6 +7,20 @@ from ..conversation import Conversation, UserConversation
 
 
 class TestUserConversation(unittest.TestCase):
+    def setUp(self):
+        self.patchers = [
+            patch('chat.conversation.skygear_config',
+                  Mock(return_value={'app': {'master_key': 'secret'}})),
+            patch('chat.user_conversation.skygear_config',
+                  Mock(return_value={'app': {'master_key': 'secret'}})),
+        ]
+        for each_patcher in self.patchers:
+            each_patcher.start()
+
+    def tearDown(self):
+        for each_patcher in self.patchers:
+            each_patcher.stop()
+
     def conversation(self):
         return deserialize_record({
             '_id': 'conversation/1',
@@ -16,8 +30,6 @@ class TestUserConversation(unittest.TestCase):
             'admin_ids': ['user1']
         })
 
-    @patch('chat.user_conversation.skygear_config',
-           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_consistent_hash(self):
         c = Conversation(self.conversation())
         uc1 = UserConversation(c, 'userid1')
@@ -30,8 +42,6 @@ class TestUserConversation(unittest.TestCase):
         self.assertNotEqual(str(r1), str(r3))
 
     @patch('chat.user_conversation.SkygearContainer', autospec=True)
-    @patch('chat.user_conversation.skygear_config',
-           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_create(self, container):
         c = Conversation(self.conversation())
         uc = UserConversation(c, 'userid')
@@ -54,8 +64,6 @@ class TestUserConversation(unittest.TestCase):
         ))
 
     @patch('chat.user_conversation.SkygearContainer', autospec=True)
-    @patch('chat.user_conversation.skygear_config',
-           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_delete(self, container):
         c = Conversation(self.conversation())
         uc = UserConversation(c, 'userid')
