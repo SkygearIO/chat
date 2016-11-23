@@ -1,6 +1,15 @@
 [![Build Status](https://travis-ci.org/SkygearIO/chat.svg)](https://travis-ci.org/SkygearIO/chat)
 # Chat Plugin for Skygear
 
+## Related SDK
+
+You can find the SDK code in following repos on github. You can also directly
+install at the package manager. 
+
+JS - chat-SDK-JS (skygear-chat at npm)
+iOS - chat-SDK-iOS (SKYKit/Chat on cocoapods)
+Android - chat-SDK-Android (io.skygear.chat on jscentre)
+
 ### Get the demo running at Skygear cloud 
 
 __First__
@@ -48,7 +57,7 @@ Update database schema
 
 ### Understanding the model
 
-In this chat plugin, we have 2 model. It responsibility as follow.
+In this chat plugin, we have various model. Its responsibility as follow.
 
 - Conversation - storing information on who is the admins, conversation title,
   last message arrival time, etc.
@@ -57,7 +66,8 @@ In this chat plugin, we have 2 model. It responsibility as follow.
 - UserConversation - the exist of this relation represent a user is participant
   of a conversation. It store information on user specific information to a
   conversation, like last read time and unread count.
-
+- UserChatStatus - Storing data like `last_online`.
+- Receipt - Storing the user receipt on message.
 
 For API detail, please visit the platform specific API filie:
 
