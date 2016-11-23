@@ -3,9 +3,8 @@ from unittest.mock import Mock, patch
 
 from skygear.transmitter.encoding import deserialize_record
 
-from ..conversation import (SkygearChatException,
-                            handle_conversation_before_save,
-                            validate_conversation)
+from ..conversation import (Conversation, SkygearChatException,
+                            handle_conversation_before_save)
 
 
 class TestHandleConversationBeforeSave(unittest.TestCase):
@@ -41,15 +40,15 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
         })
 
     def test_conversation_valiate_ok(self):
-        validate_conversation(self.record())
-        validate_conversation(self.original_record())
+        Conversation(self.record()).validate()
+        Conversation(self.original_record()).validate()
 
     def test_conversation_admins_not_paticipant(self):
         with self.assertRaises(SkygearChatException) as cm:
-            validate_conversation(self.invalid_record())
+            Conversation(self.invalid_record()).validate()
 
-    def test_conversation__paticipant_id_format(self):
-        wrong_user_id = deserialize_record({
+    def test_conversation_paticipant_id_format(self):
+        conv_with_wrong_user_id = deserialize_record({
             '_id': 'conversation/wronguserid',
             '_access': None,
             '_ownerID': 'user1',
@@ -57,7 +56,7 @@ class TestHandleConversationBeforeSave(unittest.TestCase):
             'admin_ids': []
         })
         with self.assertRaises(SkygearChatException) as cm:
-            validate_conversation(wrong_user_id)
+            Conversation(conv_with_wrong_user_id).validate()
 
     @patch('chat.conversation.current_user_id', Mock(return_value="user1"))
     def test_with_valid_record(self):

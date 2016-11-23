@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 from skygear.transmitter.encoding import deserialize_record
 
-from ..conversation import UserConversation
+from ..conversation import Conversation, UserConversation
 
 
 class TestUserConversation(unittest.TestCase):
@@ -19,19 +19,23 @@ class TestUserConversation(unittest.TestCase):
     @patch('chat.user_conversation.skygear_config',
            Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_consistent_hash(self):
-        uc = UserConversation(self.conversation().id)
-        r = uc.consistent_hash('itwillbesha256')
-        r2 = uc.consistent_hash('itwillbesha256')
-        another = uc.consistent_hash('another')
-        self.assertEqual(str(r), str(r2))
-        self.assertNotEqual(str(r), str(another))
+        c = Conversation(self.conversation())
+        uc1 = UserConversation(c, 'userid1')
+        uc2 = UserConversation(c, 'userid1')
+        uc3 = UserConversation(c, 'userid2')
+        r1 = uc1.get_consistent_hash()
+        r2 = uc2.get_consistent_hash()
+        r3 = uc3.get_consistent_hash()
+        self.assertEqual(str(r1), str(r2))
+        self.assertNotEqual(str(r1), str(r3))
 
     @patch('chat.user_conversation.SkygearContainer', autospec=True)
     @patch('chat.user_conversation.skygear_config',
            Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_create(self, container):
-        uc = UserConversation(self.conversation().id)
-        uc.create(['userid'])
+        c = Conversation(self.conversation())
+        uc = UserConversation(c, 'userid')
+        uc.create()
         self.assertEqual(len(container.method_calls), 1)
         self.assertEqual(container.method_calls[0][0], '().send_action')
         self.assertEqual(container.method_calls[0][1], (
@@ -52,17 +56,10 @@ class TestUserConversation(unittest.TestCase):
     @patch('chat.user_conversation.SkygearContainer', autospec=True)
     @patch('chat.user_conversation.skygear_config',
            Mock(return_value={'app': {'master_key': 'secret'}}))
-    def test_create_multiple(self, container):
-        uc = UserConversation(self.conversation().id)
-        uc.create(['userid', 'userid2'])
-        self.assertEqual(len(container.method_calls), 2)
-
-    @patch('chat.user_conversation.SkygearContainer', autospec=True)
-    @patch('chat.user_conversation.skygear_config',
-           Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_delete(self, container):
-        uc = UserConversation(self.conversation().id)
-        uc.delete(['userid'])
+        c = Conversation(self.conversation())
+        uc = UserConversation(c, 'userid')
+        uc.delete()
         self.assertEqual(len(container.method_calls), 1)
         self.assertEqual(container.method_calls[0][0], '().send_action')
         self.assertEqual(container.method_calls[0][1], (
@@ -72,11 +69,3 @@ class TestUserConversation(unittest.TestCase):
                 'ids': ['user_conversation/5e0069ae-1fe3-9680-5512-332b363bbc73']
             }
         ))
-
-    @patch('chat.user_conversation.SkygearContainer', autospec=True)
-    @patch('chat.user_conversation.skygear_config',
-           Mock(return_value={'app': {'master_key': 'secret'}}))
-    def test_delete_multiple(self, container):
-        uc = UserConversation(self.conversation().id)
-        uc.delete(['userid', 'userid2'])
-        self.assertEqual(len(container.method_calls), 2)

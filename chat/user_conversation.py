@@ -13,54 +13,49 @@ from .utils import _get_schema_name
 
 
 class UserConversation():
-    def __init__(
-        self,
-        conversation_id: 'RecordID',
-        master_key=None
-    ):
+    def __init__(self, conversation, participant_id, master_key=None):
         if master_key is None:
             master_key = skygear_config.app.master_key
 
-        self.conversation_id = conversation_id
-        self.conversation_ref = {
-            '$type': 'ref',
-            '$id': 'conversation/' + conversation_id._key
-        }
+        self.conversation = conversation
+        self.participant_id = participant_id
         self.master_key = master_key
 
-    def consistent_hash(self, user_id):
-        seed = self.conversation_id._key + user_id
+    def get_conversation_ref(self):
+        return {
+            '$type': 'ref',
+            '$id': 'conversation/' + self.conversation.record.id._key
+        }
+
+    def get_consistent_hash(self):
+        seed = self.conversation.record.id._key + self.participant_id
         sha = hashlib.sha256(bytes(seed, 'utf8'))
         return uuid.UUID(bytes=sha.digest()[0:16])
 
-    def create(self, user_ids: [str]):
-        for user_id in user_ids:
-            container = SkygearContainer(api_key=skygear_config.app.master_key,
-                                         user_id=user_id)
-            uc_uid = self.consistent_hash(user_id)
-            container.send_action('record:save', {
-                'database_id': '_public',
-                'records': [{
-                    '_id': 'user_conversation/' + str(uc_uid),
-                    '_access': [],
-                    'user': {
-                        '$type': 'ref',
-                        '$id': 'user/' + user_id
-                    },
-                    'conversation': self.conversation_ref,
-                    'unread_count': 0
-                }]
-            })
+    def create(self):
+        container = SkygearContainer(api_key=self.master_key,
+                                     user_id=self.participant_id)
+        container.send_action('record:save', {
+            'database_id': '_public',
+            'records': [{
+                '_id': 'user_conversation/' + str(self.get_consistent_hash()),
+                '_access': [],
+                'user': {
+                    '$type': 'ref',
+                    '$id': 'user/' + self.participant_id
+                },
+                'conversation': self.get_conversation_ref(),
+                'unread_count': 0
+            }]
+        })
 
-    def delete(self, user_ids: [str]):
-        for user_id in user_ids:
-            container = SkygearContainer(api_key=skygear_config.app.master_key,
-                                         user_id=user_id)
-            uc_uid = self.consistent_hash(user_id)
-            container.send_action('record:delete', {
-                'database_id': '_public',
-                'ids': ['user_conversation/' + str(uc_uid)]
-            })
+    def delete(self):
+        container = SkygearContainer(api_key=self.master_key,
+                                     user_id=self.participant_id)
+        container.send_action('record:delete', {
+            'database_id': '_public',
+            'ids': ['user_conversation/' + str(self.get_consistent_hash())]
+        })
 
 
 def total_unread():
