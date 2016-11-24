@@ -3,7 +3,8 @@ from unittest.mock import Mock, patch
 
 from skygear.transmitter.encoding import deserialize_record
 
-from ..message import SkygearChatException, handle_message_before_save
+from ..exc import SkygearChatException
+from ..message_handlers import handle_message_before_save
 
 
 class TestHandleMessageBeforeSave(unittest.TestCase):
@@ -16,7 +17,10 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
             '_id': 'message/1',
             '_access': None,
             '_ownerID': 'user1',
-            'conversation_id': 'conversation1',
+            'conversation_id': {
+                '$type': 'ref',
+                '$id': 'conversation/1'
+            },
             'body': 'hihi'
         })
 
@@ -25,7 +29,10 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
             '_id': 'message/1',
             '_access': None,
             '_ownerID': 'user1',
-            'conversation_id': 'conversation1',
+            'conversation_id': {
+                '$type': 'ref',
+                '$id': 'conversation/1'
+            },
             'body': 'hihi'
         })
 

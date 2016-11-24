@@ -88,16 +88,18 @@ def handle_message_after_save(record, original_record, conn):
     for p_id in conversation['participant_ids']:
         _publish_event(
             p_id, "message", "create", record)
-    # Update all UserConversation unread count by 1
-    conversation_id = record['conversation_id'].recordID.key
-    conn.execute('''
-        UPDATE %(schema_name)s.user_conversation
-        SET "unread_count" = "unread_count" + 1
-        WHERE "conversation" = %(conversation_id)s
-    ''', {
-        'schema_name': AsIs(_get_schema_name()),
-        'conversation_id': conversation_id
-    })
+
+    if original_record is None:
+        # Update all UserConversation unread count by 1
+        conversation_id = record['conversation_id'].recordID.key
+        conn.execute('''
+            UPDATE %(schema_name)s.user_conversation
+            SET "unread_count" = "unread_count" + 1
+            WHERE "conversation" = %(conversation_id)s
+        ''', {
+            'schema_name': AsIs(_get_schema_name()),
+            'conversation_id': conversation_id
+        })
 
 
 def register_message_hooks(settings):
