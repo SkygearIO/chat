@@ -6,7 +6,7 @@
 You can find the SDK code in following repos on github. You can also directly
 install at the package manager. 
 
-JS - chat-SDK-JS (skygear-chat at npm)
+JS - chat-SDK-JS(https://github.com/SkygearIO/chat-SDK-JS)
 iOS - chat-SDK-iOS (SKYKit/Chat on cocoapods)
 Android - chat-SDK-Android (io.skygear.chat on jscentre)
 
