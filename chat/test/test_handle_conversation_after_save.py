@@ -37,12 +37,12 @@ class TestHandleConversationAfterSave(unittest.TestCase):
             'admin_ids': ['user1']
         })
 
-    @patch('chat.conversation._publish_event')
+    @patch('chat.conversation._publish_record_event')
     def test_pubsub_newly_created_conversation(self, mock_publish_event):
         pubsub_conversation_after_save(self.record(), None, self.conn)
         self.assertIs(mock_publish_event.call_count, 2)
 
-    @patch('chat.conversation._publish_event')
+    @patch('chat.conversation._publish_record_event')
     def test_pubsub_newly_created_conversation_with_original_record(
             self, mock_publish_event):
         pubsub_conversation_after_save(

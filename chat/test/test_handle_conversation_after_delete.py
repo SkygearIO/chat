@@ -20,7 +20,7 @@ class TestHandleConversationAfterDelete(unittest.TestCase):
             'admin_ids': ['user1']
         })
 
-    @patch('chat.conversation._publish_event')
+    @patch('chat.conversation._publish_record_event')
     @patch('chat.conversation.skygear_config',
            Mock(return_value={'app': {'master_key': 'secret'}}))
     def test_publish_event_count_should_be_three(self, mock_publish_event):

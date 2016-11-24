@@ -5,7 +5,7 @@ from skygear.skyconfig import config as skygear_config
 from skygear.utils.context import current_user_id
 
 from .exc import SkygearChatException
-from .pubsub import _publish_event
+from .pubsub import _publish_record_event
 from .user_conversation import UserConversation
 
 
@@ -160,7 +160,7 @@ class ConversationChangeOperation():
             users_to_publish = users_to_publish | old_participants
             old_record = self.old_conversation.record
         for each_user in users_to_publish:
-            _publish_event(
+            _publish_record_event(
                 each_user, "conversation", "update", new_record, old_record)
 
 
@@ -190,7 +190,7 @@ def handle_conversation_before_delete(record, conn):
 def handle_conversation_after_delete(record, conn):
     conversation = Conversation(record)
     for each_participant in conversation.get_participant_set():
-        _publish_event(
+        _publish_record_event(
             each_participant, "conversation", "delete", conversation.record)
 
 
