@@ -48,7 +48,7 @@ class TestHandleMessageAfterSave(unittest.TestCase):
             'body': 'hihi'
         })
 
-    @patch('chat.message_handlers._publish_event')
+    @patch('chat.message_handlers._publish_record_event')
     @patch('chat.message_handlers._get_schema_name', Mock(return_value='app_dev'))
     @patch('chat.message._get_conversation', Mock(return_value={
         'participant_ids': ['user1', 'user2']}))

@@ -9,7 +9,7 @@ from .asset import sign_asset_url
 from .conversation import Conversation
 from .exc import NotInConversationException, SkygearChatException
 from .message import Message
-from .pubsub import _publish_event
+from .pubsub import _publish_record_event
 from .utils import (_get_conversation, _get_schema_name,
                     current_context_has_master_key)
 
@@ -85,7 +85,7 @@ def handle_message_after_save(record, original_record, conn):
     message = Message.from_record(record)
     conversation = Conversation(message.fetchConversationRecord())
     for p_id in conversation.get_participant_set():
-        _publish_event(
+        _publish_record_event(
             p_id, "message", "create", record)
 
     if original_record is None:
