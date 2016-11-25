@@ -1,8 +1,8 @@
 from .conversation import register_conversation_hooks
 from .initialize import register_initialization_event_handlers
-from .typing import register_typing_lambda
 from .message_handlers import register_message_hooks, register_message_lambdas
 from .receipt_handlers import register_receipt_hooks, register_receipt_lambdas
+from .typing import register_typing_lambda
 from .user_conversation import (register_user_conversation_hooks,
                                 register_user_conversation_lambdas)
 
