@@ -1,7 +1,48 @@
+# Internal channel name
+
+Each user will have a rotatable `_user_channel`. And all message are fanout at
+the server side for security purpose.
+
+The example record event payload are:
+
+```
+{
+  "event": "update",
+  "data": {
+    'record_type': record_type,
+    'event_type': event_type,
+    'record': serialize_record(record),
+    'original_record': serialize_orig_record
+  }
+}
+```
+
+The example typing event payload are:
+
+```
+{
+  "event": "typing",
+  "data": {
+    "conversation/id1": {
+      "user/id": {
+        "event": "begin",
+        "at": "20161116T78:44:00Z"
+      },
+      "user/id2": {
+        "event": "begin",
+        "at": "20161116T78:44:00Z"
+      }
+    }
+  }
+}
+```
+
+`event` can be `update`, `create`, `delete` and `typing`.
+
+
 # Pubsub
 
 - subscribe(callback)
-The pubsub channel is based on `user_id`
 
 This pass in callback will be invoked when messages to user participating
 conversation is created/deleted. The fanout is done at server side.
@@ -18,8 +59,6 @@ format is as follow:
 ```
 
 # TypingIndicator
-
-The pubsub channel is based on `conversation_id`
 
 - sendTypingIndicator(conversation, state)
 - subscribeTypingIndicator(conversation, callback(payload))
