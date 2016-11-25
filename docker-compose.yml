@@ -46,7 +46,7 @@ services:
     - db
     volumes:
     - ./:/usr/src/app
-    command: py-skygear __init__.py
+    command: py-skygear chat
     environment:
       DATABASE_URL: postgresql://postgres:@db:5432/postgres?sslmode=disable 
       PUBSUB_URL: ws://app:3000/pubsub
