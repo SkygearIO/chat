@@ -83,10 +83,11 @@ def handle_message_before_save(record, original_record, conn):
 
 def handle_message_after_save(record, original_record, conn):
     message = Message.from_record(record)
+    event_type = 'create' if original_record is None else 'update'
     conversation = Conversation(message.fetchConversationRecord())
     for p_id in conversation.get_participant_set():
         _publish_record_event(
-            p_id, "message", "create", record)
+            p_id, "message", event_type, record, original_record)
 
     if original_record is None:
         # Update all UserConversation unread count by 1
