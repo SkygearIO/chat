@@ -1,108 +1,162 @@
 from psycopg2.extensions import AsIs
-from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
-import skygear
+from skygear.container import SkygearContainer
+from skygear.models import Record, RecordID, Reference
+from skygear.skyconfig import config as skygear_config
+from skygear.transmitter.encoding import deserialize_record, serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
-from .asset import sign_asset_url
 from .exc import SkygearChatException
-from .pubsub import _publish_record_event
-from .utils import _get_conversation, _get_schema_name
+from .utils import _get_conversation, _get_schema_name, to_rfc3339_or_none
 
 
-def handle_message_before_save(record, original_record, conn):
-    conversation = _get_conversation(record['conversation_id'])
+class Message:
+    def __init__(self):
+        self.record = None
+        self.conversationRecord = None
 
-    if current_user_id() not in conversation.get('participant_ids', []):
-        raise SkygearChatException(
-            "user not in conversation, permission denied")
+    @classmethod
+    def fetch(cls, message_id: str):
+        """
+        Fetch the message from skygear.
 
-    if original_record is not None:
-        raise SkygearChatException("message is not editable")
+        The conversation record is also fetched using eager load.
+        """
+        # FIXME checking should not be necessary, passing correct type
+        # is the responsibility of the caller.
+        # message_id can be Reference, recordID or string
+        if isinstance(message_id, Reference):
+            message_id = message_id.recordID.key
+        if isinstance(message_id, RecordID):
+            message_id = message_id.key
+        if not isinstance(message_id, str):
+            raise ValueError()
 
-
-def handle_message_after_save(record, original_record, conn):
-    conversation = _get_conversation(record['conversation_id'])
-    for p_id in conversation['participant_ids']:
-        _publish_record_event(
-            p_id, "message", "create", record)
-    # Update all UserConversation unread count by 1
-    conversation_id = record['conversation_id'].recordID.key
-    conn.execute('''
-        UPDATE %(schema_name)s.user_conversation
-        SET "unread_count" = "unread_count" + 1
-        WHERE "conversation" = %(conversation_id)s
-    ''', {
-        'schema_name': AsIs(_get_schema_name()),
-        'conversation_id': conversation_id
-    })
-
-
-def get_messages(conversation_id, limit, before_time=None):
-    conversation = _get_conversation(conversation_id)
-
-    if current_user_id() not in conversation['participant_ids']:
-        raise SkygearChatException("user not in conversation")
-
-    # FIXME: After the ACL can be by-pass the ACL, we should query the with
-    # master key
-    # https://github.com/SkygearIO/skygear-server/issues/51
-    with db.conn() as conn:
-        cur = conn.execute('''
-            SELECT
-                _id, _created_at, _created_by,
-                body, conversation_id, metadata, attachment
-            FROM %(schema_name)s.message
-            WHERE conversation_id = %(conversation_id)s
-            AND (_created_at < %(before_time)s OR %(before_time)s IS NULL)
-            ORDER BY _created_at DESC
-            LIMIT %(limit)s;
-            ''', {
-                'schema_name': AsIs(_get_schema_name()),
-                'conversation_id': conversation_id,
-                'before_time': before_time,
-                'limit': limit
+        container = SkygearContainer(api_key=skygear_config.app.api_key)
+        response = container.send_action(
+            'record:query',
+            {
+                'database_id': '_public',
+                'record_type': 'message',
+                'limit': 1,
+                'sort': [],
+                'include': {
+                    'conversation': {
+                        '$type': 'keypath',
+                        '$val': 'conversation_id'
+                    }
+                },
+                'count': False,
+                'predicate': [
+                    'eq', {
+                        '$type': 'keypath',
+                        '$val': '_id'
+                    },
+                    message_id
+                ]
             }
         )
 
-        results = []
-        for row in cur:
-            created_stamp = row[1].timestamp()
-            dt = timestamp_to_rfc3339_utcoffset(created_stamp)
-            r = {
-                '_id': 'message/' + row[0],
-                '_created_at': dt,
-                '_created_by': row[2],
-                'body': row[3],
-                'conversation_id': {
-                    '$id': 'conversation/' + row[4],
-                    '$type': 'ref'
-                },
-                'metadata': row[5],
-            }
-            if row[6]:
-                r['attachment'] = {
-                    '$type': 'asset',
-                    '$name': row[6],
-                    '$url': sign_asset_url(row[6])
+        if 'error' in response:
+            raise SkygearChatException(response['error'])
+
+        if len(response['result']) == 0:
+            raise SkygearChatException("no conversation found")
+
+        obj = cls()
+        messageDict = response['result'][0]
+        obj.record = deserialize_record(messageDict)
+        conversationDict = messageDict['_transient']['conversation']
+        obj.conversationRecord = deserialize_record(conversationDict)
+        return obj
+
+    @classmethod
+    def from_record(cls, record):
+        """
+        Create a message from a record. This function do not make
+        external calls.
+        """
+        obj = cls()
+        obj.record = record
+        return obj
+
+    def fetchConversationRecord(self) -> Record:
+        """
+        Fetch conversation record. This is required if the Message
+        is created using a Record rather than fetching the Record
+        from the database.
+        """
+        conversation_id = self.record['conversation_id'].recordID.key
+        self.conversationRecord = _get_conversation(conversation_id)
+        return self.conversationRecord
+
+    def getReceiptList(self):
+        """
+        Returns a list of message receipt statuses.
+        """
+        receipts = list()
+        with db.conn() as conn:
+            cur = conn.execute('''
+                SELECT user_id, read_at, delivered_at
+                FROM %(schema_name)s.receipt
+                WHERE
+                    "message_id" = %(message_id)s
+                ''', {
+                    'schema_name': AsIs(_get_schema_name()),
+                    'message_id': self.record.id.key
                 }
-            results.append(r)
+            )
 
-        return {'results': results}
+            for row in cur:
+                receipts.append({
+                    'user_id': row['user_id'],
+                    'read_at': to_rfc3339_or_none(row['read_at']),
+                    'delivered_at': to_rfc3339_or_none(row['delivered_at'])
+                })
+        return receipts
 
+    def updateConversationStatus(self, conn) -> bool:
+        """
+        Update the conversation status field by querying the database for
+        all receipt statuses.
+        """
+        if not self.conversationRecord:
+            raise Exception('no conversation record')
 
-def register_message_hooks(settings):
-    @skygear.before_save("message", async=False)
-    def message_before_save_handler(record, original_record, conn):
-        return handle_message_before_save(record, original_record, conn)
+        cur = conn.execute('''
+            SELECT DISTINCT user_id
+            FROM %(schema_name)s.receipt
+            WHERE message_id = %(message_id)s AND read_at IS NOT NULL
+            ''', {
+                'schema_name': AsIs(_get_schema_name()),
+                'message_id': self.record.id.key
+            }
+        )
 
-    @skygear.after_save("message")
-    def message_after_save_handler(record, original_record, conn):
-        return handle_message_after_save(record, original_record, conn)
+        read_users = set([row[0] for row in cur if row[0]])
+        participants = set(self.conversationRecord['participant_ids'])
+        if len(read_users) == 0:
+            new_status = 'delivered'
+        elif read_users + set([self.record.created_by]) > participants:
+            new_status = 'some_read'
+        else:
+            new_status = 'all_read'
 
+        if new_status == self.record.get('conversation_status', None):
+            return False
 
-def register_message_lambdas(settings):
-    @skygear.op("chat:get_messages", auth_required=True, user_required=True)
-    def get_messages_lambda(conversation_id, limit, before_time=None):
-        return get_messages(conversation_id, limit, before_time)
+        self.record['conversation_status'] = new_status
+        return True
+
+    def save(self) -> None:
+        """
+        Save the Message record to the database.
+        """
+        container = SkygearContainer(api_key=skygear_config.app.master_key,
+                                     user_id=current_user_id())
+        container.send_action('record:save', {
+            'database_id': '_public',
+            'records': [serialize_record(self.record)],
+            'atomic': True
+        })

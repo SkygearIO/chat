@@ -1,9 +1,11 @@
 from psycopg2.extensions import AsIs
+from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 from skygear.container import SkygearContainer
 from skygear.models import RecordID, Reference
 from skygear.skyconfig import config as skygear_config
 from skygear.utils import db
+from skygear.utils.context import current_context
 
 from .exc import SkygearChatException
 
@@ -85,3 +87,25 @@ def _check_if_table_exists(tablename):
                 results.append(row[0])
 
         return len(results) > 0
+
+
+def current_context_has_master_key():
+    # FIXME: skygear-server does not pass access_key_type information
+    # yet. This is a temporary workaround before skygear-server has support.
+    return 'access_key_type' not in current_context() or \
+        current_context().get('access_key_type', '') == 'master'
+
+
+def is_str_list(list_):
+    if not isinstance(list_, list):
+        return False
+    for item in list_:
+        if not isinstance(item, str):
+            return False
+    return True
+
+
+def to_rfc3339_or_none(dt):
+    if not dt:
+        return None
+    return timestamp_to_rfc3339_utcoffset(dt.timestamp())

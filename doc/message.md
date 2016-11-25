@@ -12,19 +12,27 @@ Message have following attributes
 Related API:
 
 - createMessage(conversation, body, metadata, asset)
-- getMessages(conversation, limit, before_time)
+  - Use `record:save`.
 
-getMessage is a lambda that will return the Receipt info together if any.
+- getMessages(conversation, limit, before_time)
+  - Use `chat:get_messages` lambda.
+  - Will return the Receipt info together if any.
 
 
 # Read/Unread Message
-- markAsRead([messages])
+- markAsRead([message_id])
+  - Use `chat:mark_as_read` lambda.
+  - The lambda should be called with a list of message IDs for the message
+    displayed to the user.
+  - Do not need to call this lambda if privacy settings do not allow.
+- markAsDelivered([message_id])
+  - Use `chat:mark_as_delivered` lambda.
+  - The lambda should be called with a list of message IDs upon getting
+    the messages.
 - markAsLastMessageRead(conversation, message)
+  - Use `record:save` on `user_conversation` record_type.
 - getUnreadMessageCount(conversation)
-
-Internal method to be called automatically on SDK on client calling
-`getMessages`. *Or we can do it at python side*
-- `_markAsDelivery([messages])`
+  - Use `record:fetch` on `user_conversation` record_type.
 
 `message.conversationStatus`. This attributes is updated by the python plugin.
 Having following possible value:
@@ -44,14 +52,17 @@ Receipt is a Skygear Record point to User and Message, storing the message
 delivery status. The status can be `delivered` and `read`.
 
 Related API:
-- getReceipt(message)
+
+- getReceipt(message_id)
+  - Use `chat:get_receipt` lambda.
 
 It will return an array of receipt object like following
 
 ```
 [{
-  'user_id': 'uuid',
-  'read_at': '20161116T18:44:00Z'
+  "user_id": "uuid",
+  "read_at": "20161116T18:44:00Z"
+  "delivered__at": "20161116T18:44:00Z"
 },
 {
   ...

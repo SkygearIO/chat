@@ -77,6 +77,30 @@ def register_initialization_event_handlers(settings):
                             {
                                 'name': 'conversation_id',
                                 'type': 'ref(conversation)'
+                            },
+                            {
+                                'name': 'conversation_status',
+                                'type': 'string'
+                            }
+                        ]
+                    },
+                    'receipt': {
+                        'fields': [
+                            {
+                                'name': 'user_id',
+                                'type': 'ref(user)'
+                            },
+                            {
+                                'name': 'message_id',
+                                'type': 'ref(message)'
+                            },
+                            {
+                                'name': 'read_at',
+                                'type': 'datetime'
+                            },
+                            {
+                                'name': 'delivered_at',
+                                'type': 'datetime'
                             }
                         ]
                     }
