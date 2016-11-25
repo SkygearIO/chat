@@ -14,6 +14,7 @@ def _publish_event(user_id, event, data=None):
             'data': data
         })
 
+
 def _publish_record_event(user_id,
                           record_type,
                           event,

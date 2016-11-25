@@ -1,15 +1,16 @@
 from datetime import datetime
+
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 import skygear
-from skygear.pubsub import Hub
-from skygear.skyconfig import config as skygear_config
 from skygear.utils.context import current_user_id
 
 from .exc import SkygearChatException
+from .pubsub import _publish_event
+from .utils import _get_conversation
 
 
-def publish_typing(conversation_id, evt, at):
+def publish_typing(conversation, evt, at):
     """
     {
       'userid': {
@@ -23,13 +24,17 @@ def publish_typing(conversation_id, evt, at):
     }
     """
     user_id = current_user_id()
+    channels = conversation['participant_ids']
     data = {}
-    data[user_id] = {
+    data['user/' + user_id] = {
         'event': evt,
         'at': timestamp_to_rfc3339_utcoffset(at.timestamp())
     }
-    hub = Hub(api_key=skygear_config.app.api_key)
-    hub.publish(conversation_id, data)
+    for user_id in channels:
+        _publish_event(user_id, 'typing', {
+            conversation['_id']: data
+        })
+    return {'status': 'OK'}
 
 
 def register_typing_lambda(settings):
@@ -42,5 +47,5 @@ def register_typing_lambda(settings):
             dt = datetime.strptime(at, '%Y-%m-%dT%H:%M:%S.%fZ')
         except ValueError:
             raise SkygearChatException('Event time is not in correct format')
-
-        return publish_typing(conversation_id, evt, dt)
+        c = _get_conversation(conversation_id)
+        return publish_typing(c, evt, dt)
