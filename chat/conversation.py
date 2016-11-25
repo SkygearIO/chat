@@ -166,8 +166,8 @@ class ConversationChangeOperation():
 
 def handle_conversation_before_save(record, original_record, conn):
     changes = ConversationChangeOperation(original_record, record)
-    changes.new_conversation.validate()
     changes.new_conversation.preprocess()
+    changes.new_conversation.validate()
     changes.validate()
 
 
