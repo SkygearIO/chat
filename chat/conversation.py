@@ -107,6 +107,12 @@ class Conversation():
     def get_admin_set(self):
         return set(self.get('admin_ids'))
 
+    def is_participant(self, user_id: str) -> bool:
+        """
+        Returns whether the user is a participant in the conversation.
+        """
+        return user_id in self.get('participant_ids')
+
 
 class ConversationChangeOperation():
     def __init__(self, old_conversation_record, new_conversation_record):

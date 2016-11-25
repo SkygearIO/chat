@@ -4,10 +4,11 @@ import skygear
 from skygear.models import Record
 from skygear.utils.context import current_user_id
 
+from .conversation import Conversation
 from .exc import NotInConversationException, SkygearChatException
 from .message import Message
 from .receipt import create_delivered_receipts, create_read_receipts
-from .utils import _is_participant, is_str_list
+from .utils import is_str_list
 
 
 def _conversation_status_may_change(
@@ -33,7 +34,8 @@ def handle_receipt_before_save(record, original_record, conn):
         raise SkygearChatException('missing message_id')
 
     message = Message.fetch(message_id.recordID.key)
-    if not _is_participant(message.conversationRecord, current_user_id()):
+    conversation = Conversation(message.conversationRecord)
+    if not conversation.is_participant(current_user_id()):
         raise NotInConversationException()
 
     user_id = record.get('user_id', None)
@@ -101,7 +103,8 @@ def handle_get_receipt(message_id):
     """
     logging.info("handle_get_receipt: for message_id %s", message_id)
     message = Message.fetch(message_id)
-    if not _is_participant(message.conversationRecord, current_user_id()):
+    conversation = Conversation(message.conversationRecord)
+    if not conversation.is_participant(current_user_id()):
         raise NotInConversationException()
 
     logging.debug(

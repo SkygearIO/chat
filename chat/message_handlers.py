@@ -6,17 +6,17 @@ from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .asset import sign_asset_url
+from .conversation import Conversation
 from .exc import NotInConversationException, SkygearChatException
 from .message import Message
 from .pubsub import _publish_event
-from .utils import (_get_conversation, _get_schema_name, _is_participant,
+from .utils import (_get_conversation, _get_schema_name,
                     current_context_has_master_key)
 
 
 def get_messages(conversation_id, limit, before_time=None):
-    conversation = _get_conversation(conversation_id)
-
-    if not _is_participant(conversation, current_user_id()):
+    conversation = Conversation(_get_conversation(conversation_id))
+    if not conversation.is_participant(current_user_id()):
         raise NotInConversationException()
 
     # FIXME: After the ACL can be by-pass the ACL, we should query the with
@@ -68,9 +68,8 @@ def get_messages(conversation_id, limit, before_time=None):
 
 def handle_message_before_save(record, original_record, conn):
     message = Message.from_record(record)
-    conversation = message.fetch_conversation_record()
-
-    if not _is_participant(conversation, current_user_id()):
+    conversation = Conversation(message.fetchConversationRecord())
+    if not conversation.is_participant(current_user_id()):
         raise NotInConversationException()
 
     if original_record is not None and not current_context_has_master_key():
@@ -84,8 +83,8 @@ def handle_message_before_save(record, original_record, conn):
 
 def handle_message_after_save(record, original_record, conn):
     message = Message.from_record(record)
-    conversation = message.fetch_conversation_record()
-    for p_id in conversation['participant_ids']:
+    conversation = Conversation(message.fetchConversationRecord())
+    for p_id in conversation.get_participant_set():
         _publish_event(
             p_id, "message", "create", record)
 

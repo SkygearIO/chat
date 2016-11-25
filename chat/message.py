@@ -12,6 +12,10 @@ from .utils import _get_conversation, _get_schema_name, to_rfc3339_or_none
 
 
 class Message:
+    def __init__(self):
+        self.record = None
+        self.conversationRecord = None
+
     @classmethod
     def fetch(cls, message_id: str):
         """
@@ -77,7 +81,7 @@ class Message:
         obj.record = record
         return obj
 
-    def fetch_conversation_record(self) -> Record:
+    def fetchConversationRecord(self) -> Record:
         """
         Fetch conversation record. This is required if the Message
         is created using a Record rather than fetching the Record

@@ -14,10 +14,6 @@ def _get_schema_name():
     return "app_%s" % skygear_config.app.name
 
 
-def _is_participant(conversation, user_id: str) -> bool:
-    return user_id in conversation.get('participant_ids', [])
-
-
 def _get_conversation(conversation_id):
     # conversation_id can be Reference, recordID or string
     if isinstance(conversation_id, Reference):
