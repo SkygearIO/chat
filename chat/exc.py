@@ -1,4 +1,4 @@
-from skygear.error import PermissionDenied, SkygearException
+from skygear.error import NotSupported, PermissionDenied, SkygearException
 
 
 """
@@ -15,4 +15,13 @@ class NotInConversationException(SkygearChatException):
         super().__init__(
             "user not in conversation, permission denied",
             PermissionDenied
+        )
+
+
+class NotSupportedException(SkygearChatException):
+    def __init__(self, message=None):
+        message = message or "This operation is not supported."
+        super().__init__(
+            message,
+            NotSupported
         )

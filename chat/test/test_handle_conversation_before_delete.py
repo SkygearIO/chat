@@ -31,11 +31,6 @@ class TestHandleConversationBeforeDelete(unittest.TestCase):
 
     @patch('chat.conversation.current_user_id',
            Mock(return_value='user2'))
-    def test_delete_conversation_with_no_permission(self):
-        with self.assertRaises(SkygearChatException) as cm:
+    def test_delete_conversation(self):
+        with self.assertRaises(SkygearChatException):
             handle_conversation_before_delete(self.record(), self.conn)
-
-    @patch('chat.conversation.current_user_id',
-           Mock(return_value='user1'))
-    def test_delete_conversation_with_permission(self):
-        handle_conversation_before_delete(self.record(), self.conn)

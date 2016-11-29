@@ -4,7 +4,7 @@ from skygear.models import DirectAccessControlEntry, PublicAccessControlEntry
 from skygear.skyconfig import config as skygear_config
 from skygear.utils.context import current_user_id
 
-from .exc import SkygearChatException
+from .exc import NotSupportedException, SkygearChatException
 from .pubsub import _publish_record_event
 from .user_conversation import UserConversation
 
@@ -198,16 +198,7 @@ def pubsub_conversation_after_save(record, original_record, conn):
 
 
 def handle_conversation_before_delete(record, conn):
-    conversation = Conversation(record)
-    if current_user_id() not in conversation.get_admin_set():
-        raise SkygearChatException("no permission to delete conversation")
-
-
-def handle_conversation_after_delete(record, conn):
-    conversation = Conversation(record)
-    for each_participant in conversation.get_participant_set():
-        _publish_record_event(
-            each_participant, "conversation", "delete", conversation.record)
+    raise NotSupportedException("Deleting a conversation is not supported")
 
 
 def register_conversation_hooks(settings):
@@ -227,6 +218,3 @@ def register_conversation_hooks(settings):
     def conversation_before_delete_handler(record, conn):
         return handle_conversation_before_delete(record, conn)
 
-    @skygear.after_delete("conversation")
-    def conversation_after_delete_handler(record, conn):
-        return handle_conversation_after_delete(record, conn)
