@@ -101,11 +101,21 @@ class Conversation():
                 raise SkygearChatException(
                     "Conversation with the participants already exists")
 
-    def get_participant_set(self):
+    @property
+    def participant_set(self):
         return set(self.get('participant_ids'))
 
-    def get_admin_set(self):
+    @participant_set.setter
+    def participant_set(self, participant_set):
+        self.record['participant_ids'] = list(participant_set)
+
+    @property
+    def admin_set(self):
         return set(self.get('admin_ids'))
+
+    @admin_set.setter
+    def admin_set(self, admin_set):
+        self.record['admin_ids'] = list(admin_set)
 
     def is_participant(self, user_id: str) -> bool:
         """
@@ -138,8 +148,8 @@ class ConversationChangeOperation():
     def update_user_conversations(self):
         old_participants = set()
         if self.old_conversation is not None:
-            old_participants = self.old_conversation.get_participant_set()
-        new_participants = self.new_conversation.get_participant_set()
+            old_participants = self.old_conversation.participant_set
+        new_participants = self.new_conversation.participant_set
 
         participants_to_delete = old_participants - new_participants
         for each_participant_id in participants_to_delete:
@@ -158,11 +168,11 @@ class ConversationChangeOperation():
             each_participant.create()
 
     def notify_users(self):
-        users_to_publish = self.new_conversation.get_participant_set()
+        users_to_publish = self.new_conversation.participant_set
         new_record = self.new_conversation.record
         old_record = None
         if self.old_conversation is not None:
-            old_participants = self.old_conversation.get_participant_set()
+            old_participants = self.old_conversation.participant_set
             users_to_publish = users_to_publish | old_participants
             old_record = self.old_conversation.record
         for each_user in users_to_publish:
