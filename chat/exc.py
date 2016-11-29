@@ -1,4 +1,5 @@
-from skygear.error import NotSupported, PermissionDenied, SkygearException
+from skygear.error import (InvalidArgument, NotSupported, PermissionDenied,
+                           SkygearException)
 
 
 """
@@ -24,4 +25,17 @@ class NotSupportedException(SkygearChatException):
         super().__init__(
             message,
             NotSupported
+        )
+
+
+class InvalidArgumentException(SkygearChatException):
+    def __init__(self, message=None, arguments=None):
+        message = message or "This operation is not supported."
+        arguments = arguments if isinstance(arguments, list) else []
+        super().__init__(
+            message,
+            InvalidArgument,
+            {
+                'arguments': arguments,
+            }
         )

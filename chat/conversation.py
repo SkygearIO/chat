@@ -4,9 +4,11 @@ from skygear.models import DirectAccessControlEntry, PublicAccessControlEntry
 from skygear.skyconfig import config as skygear_config
 from skygear.utils.context import current_user_id
 
-from .exc import NotSupportedException, SkygearChatException
+from .exc import (InvalidArgumentException, NotInConversationException,
+                  NotSupportedException, SkygearChatException)
 from .pubsub import _publish_record_event
 from .user_conversation import UserConversation
+from .utils import _get_conversation, current_context_has_master_key
 
 
 class Conversation():
@@ -53,14 +55,16 @@ class Conversation():
         self.record._acl = acl
 
     def validate(self):
-        if len(self.get('participant_ids', [])) == 0:
-            raise SkygearChatException("Conversation must have participants")
         if not set(self['participant_ids']) >= set(self['admin_ids']):
-            raise SkygearChatException("Admins should also be participants")
+            raise InvalidArgumentException(
+                "Admins should also be participants",
+                ['participant_ids']
+            )
         for user_id in self['participant_ids']:
             if user_id.startswith('user/'):
-                raise SkygearChatException(
-                    "Some participant IDs are not in correct format")
+                raise InvalidArgumentException(
+                    "Some participant IDs are not in correct format",
+                    ['participant_ids'])
         self.check_distinct_by_participants()
 
     def check_distinct_by_participants(self):
@@ -123,6 +127,14 @@ class Conversation():
         """
         return user_id in self.get('participant_ids')
 
+    def save(self):
+        container = SkygearContainer(api_key=self.master_key,
+                                     user_id=current_user_id())
+        return container.send_action('record:save', {
+            'database_id': '_public',
+            'records': [self.record]
+        })
+
 
 class ConversationChangeOperation():
     def __init__(self, old_conversation_record, new_conversation_record):
@@ -137,11 +149,18 @@ class ConversationChangeOperation():
     def validate(self):
         user_id = current_user_id()
         if self.is_new:
-            if user_id not in self.new_conversation['participant_ids']:
+            participants = self.new_conversation.participant_set
+            if len(participants) == 0:
+                raise SkygearChatException(
+                   "Conversation must have participants")
+            if user_id not in participants:
                 raise SkygearChatException(
                     "Cannot create conversations for other users")
         else:
-            if user_id not in self.old_conversation.get('admin_ids', []):
+            if current_context_has_master_key():
+                # do nothing, having master key can override checks here
+                pass
+            elif user_id not in self.old_conversation.get('admin_ids', []):
                 raise SkygearChatException(
                     "no permission to edit conversation")
 
@@ -201,6 +220,20 @@ def handle_conversation_before_delete(record, conn):
     raise NotSupportedException("Deleting a conversation is not supported")
 
 
+def handle_leave_conversation(conversation_id):
+    conversation = Conversation(_get_conversation(conversation_id))
+    if not conversation.is_participant(current_user_id()):
+        raise NotInConversationException()
+
+    # Remove the current user from the participant and the admin list (if
+    # exists in the list). Save the conversation using master key
+    # so that the conversation without the user being in the admin list.
+    conversation.participant_set -= set([current_user_id()])
+    conversation.admin_set -= set([current_user_id()])
+    conversation.save()
+    return {'status': 'OK'}
+
+
 def register_conversation_hooks(settings):
     @skygear.before_save("conversation", async=False)
     def conversation_before_save_handler(record, original_record, conn):
@@ -218,3 +251,9 @@ def register_conversation_hooks(settings):
     def conversation_before_delete_handler(record, conn):
         return handle_conversation_before_delete(record, conn)
 
+
+def register_conversation_lambdas(settings):
+    @skygear.op("chat:leave_conversation",
+                auth_required=True, user_required=True)
+    def leave_conversation_lambda(conversation_id):
+        return handle_leave_conversation(conversation_id)
