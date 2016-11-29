@@ -42,6 +42,14 @@ def handle_receipt_before_save(record, original_record, conn):
     if not user_id or user_id.recordID.key != current_user_id():
         raise SkygearChatException('argument exception')
 
+    if original_record:
+        # Prevent the client from modifying the delivered_at and read_at fields
+        # if a value exists.
+        if original_record.get('delivered_at', None):
+            record['delivered_at'] = original_record['delivered_at']
+        if original_record.get('read_at', None):
+            record['read_at'] = original_record['read_at']
+
 
 def handle_receipt_after_save(record, original_record, conn):
     """
@@ -87,6 +95,9 @@ def handle_mark_as_delivered(message_ids: [str]):
 def handle_mark_as_read(message_ids: [str]):
     """
     Marking a message as read, which should update a receipt for the message.
+
+    Since a message that is read is also delivered, both the delivered
+    and read date will be updated if such value does not exist.
     """
     logging.debug(
         'handle_mark_as_read: message_ids: %s',

@@ -25,6 +25,8 @@ Related API:
   - The lambda should be called with a list of message IDs for the message
     displayed to the user.
   - Do not need to call this lambda if privacy settings do not allow.
+  - Calling this lambda will also update the delivery time if the time is not
+    already set.
 - markAsDelivered([message_id])
   - Use `chat:mark_as_delivered` lambda.
   - The lambda should be called with a list of message IDs upon getting

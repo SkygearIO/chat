@@ -90,6 +90,7 @@ def create_read_receipts(
     receipts = ReceiptCollection()
     for message_id in message_ids:
         receipt = Receipt(user_id, message_id)
+        receipt.mark_as_delivered()  # message that is read is also delivered
         receipt.mark_as_read()
         receipts.append(receipt)
     return receipts
