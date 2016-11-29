@@ -14,12 +14,12 @@ Related API:
 
 - createConversation(participants, title, meta, options)
 - createDirectConversation(participant, title, meta, options)
-- deleteConversation(conversation)
 - updateConversation(conversation)
 - addParticipants(conversation, participants)
 - removeParticipants(conversation, participants)
 - addAdmins(conversation, admins)
 - removeAdmins(conversation, admins)
+- leaveConversation(conversation)
 
 
 ## Creating a conversation
@@ -71,6 +71,26 @@ Return a list of `user_id` to `message_id` mapping.
 ```
 {
   'user/id1': 'message/uuid1',
-  'user/id2': 'message/uuis2'
+  'user/id2': 'message/uuid2'
 }
 ```
+
+## Leaving a conversation
+
+Leaving a conversation will result in the current user being removed
+from the participant and admin list of the conversation.
+
+Removing
+the sole admin for a conversation will leave the conversation with no admins.
+Removing the sole participant for a conversation will leave the conversation in
+orphaned state. It is application logic to determine what to do in these
+scenarios or prevent the user from encountering these scenarios.
+
+The UserConversation
+record of the current user will also be removed from the conversation when
+the current user leave the associated conversation.
+
+To leave a conversation:
+
+- leaveConversation(conversation)
+  - Use `chat:leave_conversation` lambda
