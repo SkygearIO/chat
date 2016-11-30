@@ -68,7 +68,7 @@ class ReceiptCollection(list):
 def create_delivered_receipts(
     user_id: str,
     message_ids: [str]
-) -> [ReceiptCollection]:
+) -> ReceiptCollection:
     """
     This is a helper function to create a collection of delivered receipts.
     """
@@ -83,7 +83,7 @@ def create_delivered_receipts(
 def create_read_receipts(
     user_id: str,
     message_ids: [str]
-) -> [ReceiptCollection]:
+) -> ReceiptCollection:
     """
     This is a helper function to create a collection of read receipts.
     """
