@@ -76,7 +76,7 @@ def handle_message_before_save(record, original_record, conn):
         raise SkygearChatException("message is not editable")
 
     if original_record is not None:
-        message.updateConversationStatus()
+        message.updateConversationStatus(conn)
 
     return message.record
 
