@@ -15,15 +15,7 @@ def register_initialization_event_handlers(settings):
                         'fields': [
                             {'name': 'name', 'type': 'string'}
                         ]
-                    }
-                }
-            },
-            plugin_request=True
-        )
-        container.send_action(
-            'schema:create',
-            {
-                'record_types': {
+                    },
                     'conversation': {
                         'fields': [
                             {
@@ -83,26 +75,6 @@ def register_initialization_event_handlers(settings):
                                 'type': 'string'
                             }
                         ]
-                    },
-                    'receipt': {
-                        'fields': [
-                            {
-                                'name': 'user_id',
-                                'type': 'ref(user)'
-                            },
-                            {
-                                'name': 'message_id',
-                                'type': 'ref(message)'
-                            },
-                            {
-                                'name': 'read_at',
-                                'type': 'datetime'
-                            },
-                            {
-                                'name': 'delivered_at',
-                                'type': 'datetime'
-                            }
-                        ]
                     }
                 }
             },
@@ -129,6 +101,26 @@ def register_initialization_event_handlers(settings):
                             {
                                 'name': 'last_read_message',
                                 'type': 'ref(message)'
+                            }
+                        ]
+                    },
+                    'receipt': {
+                        'fields': [
+                            {
+                                'name': 'user_id',
+                                'type': 'ref(user)'
+                            },
+                            {
+                                'name': 'message_id',
+                                'type': 'ref(message)'
+                            },
+                            {
+                                'name': 'read_at',
+                                'type': 'datetime'
+                            },
+                            {
+                                'name': 'delivered_at',
+                                'type': 'datetime'
                             }
                         ]
                     }
