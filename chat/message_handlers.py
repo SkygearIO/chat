@@ -9,7 +9,6 @@ from .asset import sign_asset_url
 from .conversation import Conversation
 from .exc import NotInConversationException, SkygearChatException
 from .message import Message
-from .pubsub import _publish_record_event
 from .utils import (_get_conversation, _get_schema_name,
                     current_context_has_master_key)
 
@@ -77,8 +76,8 @@ def handle_message_before_save(record, original_record, conn):
     if original_record is not None and not current_context_has_master_key():
         raise SkygearChatException("message is not editable")
 
-    if original_record is not None:
-        message.updateConversationStatus(conn)
+    if message.record.get('conversation_status', None) is None:
+        message.record['conversation_status'] = 'delivered'
 
     return message.record
 
@@ -86,10 +85,7 @@ def handle_message_before_save(record, original_record, conn):
 def handle_message_after_save(record, original_record, conn):
     message = Message.from_record(record)
     event_type = 'create' if original_record is None else 'update'
-    conversation = Conversation(message.fetchConversationRecord())
-    for p_id in conversation.participant_set:
-        _publish_record_event(
-            p_id, "message", event_type, record, original_record)
+    message.notifyParticipants(event_type)
 
     if original_record is None:
         # Update all UserConversation unread count by 1

@@ -38,7 +38,6 @@ class TestPublishEvent(unittest.TestCase):
                     '_ownerID': 'user1',
                     'conversation_id': 'conversation1',
                     'body': 'hihi'
-                },
-                'original_record': None
+                }
             }
         })

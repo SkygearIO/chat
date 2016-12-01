@@ -48,15 +48,13 @@ class TestHandleMessageAfterSave(unittest.TestCase):
             'body': 'hihi'
         })
 
-    @patch('chat.message_handlers._publish_record_event')
+    @patch('chat.message._publish_record_event')
     @patch('chat.message_handlers._get_schema_name', Mock(return_value='app_dev'))
     @patch('chat.message._get_conversation', Mock(return_value={
         'participant_ids': ['user1', 'user2']}))
-    def test_publish_event_count(
-            self, mock_publish_event):
+    def test_publish_event_count(self, mock_publish_event):
         conn = Mock()
-        handle_message_after_save(
-            self.record(), None, conn)
+        handle_message_after_save(self.record(), None, conn)
         self.assertIs(mock_publish_event.call_count, 2)
         self.assertIs(conn.execute.call_count, 1)
         self.assertIs(conn.execute.call_args[0][1]['conversation_id'], '1')

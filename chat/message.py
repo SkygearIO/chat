@@ -1,6 +1,7 @@
 from psycopg2.extensions import AsIs
 
 from skygear.container import SkygearContainer
+from skygear.error import ResourceNotFound
 from skygear.models import Record, RecordID, Reference
 from skygear.skyconfig import config as skygear_config
 from skygear.transmitter.encoding import deserialize_record, serialize_record
@@ -8,6 +9,7 @@ from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .exc import SkygearChatException
+from .pubsub import _publish_record_event
 from .utils import _get_conversation, _get_schema_name, to_rfc3339_or_none
 
 
@@ -62,7 +64,8 @@ class Message:
             raise SkygearChatException(response['error'])
 
         if len(response['result']) == 0:
-            raise SkygearChatException("no conversation found")
+            raise SkygearChatException('no messages found',
+                                       code=ResourceNotFound)
 
         obj = cls()
         messageDict = response['result'][0]
@@ -125,29 +128,54 @@ class Message:
             raise Exception('no conversation record')
 
         cur = conn.execute('''
-            SELECT DISTINCT user_id
-            FROM %(schema_name)s.receipt
-            WHERE message_id = %(message_id)s AND read_at IS NOT NULL
+            WITH
+              read_count AS (
+                SELECT DISTINCT COUNT(user_id) as count
+                FROM %(schema_name)s.receipt
+                WHERE message_id = %(message_id)s
+                    AND read_at IS NOT NULL
+              ),
+              participant_count AS (
+                SELECT participant_count as count
+                FROM %(schema_name)s.conversation
+                WHERE _id = %(conversation_id)s
+              )
+            UPDATE %(schema_name)s.message
+            SET _updated_at = NOW(),
+                conversation_status =
+                  CASE
+                    WHEN read_count.count = 0 THEN 'delivered'
+                    WHEN read_count.count < participant_count.count
+                        THEN 'some_read'
+                    ELSE 'all_read'
+                  END
+            FROM read_count, participant_count
+            WHERE _id = %(message_id)s
+            RETURNING _updated_at, conversation_status
             ''', {
                 'schema_name': AsIs(_get_schema_name()),
-                'message_id': self.record.id.key
+                'message_id': self.record.id.key,
+                'conversation_id': self.conversationRecord.id.key
             }
         )
 
-        read_users = set([row[0] for row in cur if row[0]])
+        row = cur.fetchone()
+        if row is not None:
+            self.record['_updated_at'] = row[0]
+            self.record['conversation_status'] = row[1]
+
+    def notifyParticipants(self, event_type='update') -> None:
+        if not self.conversationRecord:
+            fetched = self.fetchConversationRecord()
+            if fetched is None:
+                raise SkygearChatException('no conversation record',
+                                           code=ResourceNotFound)
         participants = set(self.conversationRecord['participant_ids'])
-        if len(read_users) == 0:
-            new_status = 'delivered'
-        elif read_users + set([self.record.created_by]) > participants:
-            new_status = 'some_read'
-        else:
-            new_status = 'all_read'
-
-        if new_status == self.record.get('conversation_status', None):
-            return False
-
-        self.record['conversation_status'] = new_status
-        return True
+        for each_participant in participants:
+            _publish_record_event(each_participant,
+                                  "message",
+                                  event_type,
+                                  self.record)
 
     def save(self) -> None:
         """

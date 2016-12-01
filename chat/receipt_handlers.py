@@ -75,7 +75,7 @@ def handle_receipt_after_save(record, original_record, conn):
         )
         message = Message.fetch(record['message_id'].recordID.key)
         message.updateConversationStatus(conn)
-        message.save()
+        message.notifyParticipants()
 
 
 def handle_mark_as_delivered(message_ids: [str]):
@@ -129,7 +129,7 @@ def register_receipt_hooks(settings):
     def receipt_before_save_handler(record, original_record, conn):
         return handle_receipt_before_save(record, original_record, conn)
 
-    @skygear.after_save("receipt")
+    @skygear.after_save("receipt", async=True)
     def receipt_after_save_handler(record, original_record, conn):
         return handle_receipt_after_save(record, original_record, conn)
 

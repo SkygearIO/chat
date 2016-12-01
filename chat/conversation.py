@@ -189,14 +189,12 @@ class ConversationChangeOperation():
     def notify_users(self):
         users_to_publish = self.new_conversation.participant_set
         new_record = self.new_conversation.record
-        old_record = None
         if self.old_conversation is not None:
             old_participants = self.old_conversation.participant_set
             users_to_publish = users_to_publish | old_participants
-            old_record = self.old_conversation.record
         for each_user in users_to_publish:
             _publish_record_event(
-                each_user, "conversation", "update", new_record, old_record)
+                each_user, "conversation", "update", new_record)
 
 
 def handle_conversation_before_save(record, original_record, conn):
