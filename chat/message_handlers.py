@@ -26,7 +26,8 @@ def get_messages(conversation_id, limit, before_time=None):
         cur = conn.execute('''
             SELECT
                 _id, _created_at, _created_by,
-                body, conversation_id, metadata, attachment
+                body, conversation_id, metadata, conversation_status,
+                attachment
             FROM %(schema_name)s.message
             WHERE conversation_id = %(conversation_id)s
             AND (_created_at < %(before_time)s OR %(before_time)s IS NULL)
@@ -54,12 +55,13 @@ def get_messages(conversation_id, limit, before_time=None):
                     '$type': 'ref'
                 },
                 'metadata': row[5],
+                'conversation_status': row[6],
             }
-            if row[6]:
+            if row[7]:
                 r['attachment'] = {
                     '$type': 'asset',
-                    '$name': row[6],
-                    '$url': sign_asset_url(row[6])
+                    '$name': row[7],
+                    '$url': sign_asset_url(row[7])
                 }
             results.append(r)
 
