@@ -35,20 +35,15 @@ class Message:
         if not isinstance(message_id, str):
             raise ValueError()
 
-        container = SkygearContainer(api_key=skygear_config.app.api_key)
+        container = SkygearContainer(api_key=skygear_config.app.master_key,
+                                     user_id=current_user_id())
         response = container.send_action(
             'record:query',
             {
-                'database_id': '_public',
+                'database_id': '_union',
                 'record_type': 'message',
                 'limit': 1,
                 'sort': [],
-                'include': {
-                    'conversation': {
-                        '$type': 'keypath',
-                        '$val': 'conversation_id'
-                    }
-                },
                 'count': False,
                 'predicate': [
                     'eq', {
@@ -70,7 +65,28 @@ class Message:
         obj = cls()
         messageDict = response['result'][0]
         obj.record = deserialize_record(messageDict)
-        conversationDict = messageDict['_transient']['conversation']
+        # Conversation is in publicDB, do cannot transient include
+        print(obj.record['conversation_id'].recordID.key)
+        response = container.send_action(
+            'record:query',
+            {
+                'database_id': '_public',
+                'record_type': 'conversation',
+                'limit': 1,
+                'sort': [],
+                'count': False,
+                'predicate': [
+                    'eq', {
+                        '$type': 'keypath',
+                        '$val': '_id'
+                    },
+                    obj.record['conversation_id'].recordID.key
+                ]
+            }
+        )
+        if len(response['result']) == 0:
+            raise SkygearChatException("no conversation found")
+        conversationDict = response['result'][0]
         obj.conversationRecord = deserialize_record(conversationDict)
         return obj
 
