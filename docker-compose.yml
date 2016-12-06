@@ -57,6 +57,8 @@ services:
       APP_NAME: my_skygear_app
       API_KEY: my_skygear_key
       MASTER_KEY: my_master_key
+      TOKEN_STORE_SECRET: my_skygear_jwt_secret
+      ASSET_STORE_URL_PREFIX: http://localhost:3000/ 
 
 # The volume container for skygear
 volumes:

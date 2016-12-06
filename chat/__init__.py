@@ -1,3 +1,5 @@
+from skygear.settings import SettingsParser, add_parser
+
 from .conversation import (register_conversation_hooks,
                            register_conversation_lambdas)
 from .initialize import register_initialization_event_handlers
@@ -19,3 +21,13 @@ def includeme(settings):
     register_user_conversation_hooks(settings)
     register_user_conversation_lambdas(settings)
     register_typing_lambda(settings)
+
+
+parser = SettingsParser('SKYGEAR_CHAT')
+parser.add_setting('asset_store_url_prefix',
+                   default='http://localhost:3000/',
+                   env_var='ASSET_STORE_URL_PREFIX')
+parser.add_setting('asset_store_secret',
+                   env_var='ASSET_STORE_SECRET')
+
+add_parser('chat', parser)

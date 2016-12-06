@@ -3,7 +3,7 @@ from psycopg2.extensions import AsIs
 from skygear.container import SkygearContainer
 from skygear.error import ResourceNotFound
 from skygear.models import Record, RecordID, Reference
-from skygear.skyconfig import config as skygear_config
+from skygear.options import options as skyoptions
 from skygear.transmitter.encoding import deserialize_record, serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
@@ -35,7 +35,7 @@ class Message:
         if not isinstance(message_id, str):
             raise ValueError()
 
-        container = SkygearContainer(api_key=skygear_config.app.master_key,
+        container = SkygearContainer(api_key=skyoptions.masterkey,
                                      user_id=current_user_id())
         response = container.send_action(
             'record:query',
@@ -197,7 +197,7 @@ class Message:
         """
         Save the Message record to the database.
         """
-        container = SkygearContainer(api_key=skygear_config.app.master_key,
+        container = SkygearContainer(api_key=skyoptions.masterkey,
                                      user_id=current_user_id())
         container.send_action('record:save', {
             'database_id': '_public',

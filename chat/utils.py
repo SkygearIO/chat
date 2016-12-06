@@ -3,7 +3,7 @@ from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 from skygear.container import SkygearContainer
 from skygear.models import RecordID, Reference
-from skygear.skyconfig import config as skygear_config
+from skygear.options import options as skyoptions
 from skygear.utils import db
 from skygear.utils.context import current_context
 
@@ -11,7 +11,7 @@ from .exc import SkygearChatException
 
 
 def _get_schema_name():
-    return "app_%s" % skygear_config.app.name
+    return "app_%s" % skyoptions.appname
 
 
 def _get_conversation(conversation_id):
@@ -21,7 +21,7 @@ def _get_conversation(conversation_id):
     if isinstance(conversation_id, RecordID):
         conversation_id = conversation_id.key
 
-    container = SkygearContainer(api_key=skygear_config.app.api_key)
+    container = SkygearContainer(api_key=skyoptions.apikey)
     response = container.send_action(
         'record:query',
         {

@@ -5,7 +5,7 @@ from psycopg2.extensions import AsIs
 
 import skygear
 from skygear.container import SkygearContainer
-from skygear.skyconfig import config as skygear_config
+from skygear.options import options as skyoptions
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
@@ -15,7 +15,7 @@ from .utils import _get_schema_name
 class UserConversation():
     def __init__(self, conversation, participant_id, master_key=None):
         if master_key is None:
-            master_key = skygear_config.app.master_key
+            master_key = skyoptions.masterkey
 
         self.conversation = conversation
         self.participant_id = participant_id

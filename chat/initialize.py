@@ -1,12 +1,12 @@
 import skygear
 from skygear.container import SkygearContainer
-from skygear.skyconfig import config as skygear_config
+from skygear.options import options as skyoptions
 
 
 def register_initialization_event_handlers(settings):
     @skygear.event("before-plugins-ready")
     def chat_plugin_init():
-        container = SkygearContainer(api_key=skygear_config.app.master_key)
+        container = SkygearContainer(api_key=skyoptions.masterkey)
         container.send_action(
             'schema:create',
             {

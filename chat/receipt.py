@@ -4,7 +4,7 @@ from datetime import datetime
 
 from skygear.container import SkygearContainer
 from skygear.models import Record, RecordID, Reference
-from skygear.skyconfig import config as skygear_config
+from skygear.options import options as skyoptions
 from skygear.transmitter.encoding import serialize_record
 from skygear.utils.context import current_user_id
 
@@ -56,7 +56,7 @@ class ReceiptCollection(list):
             for receipt in self
         ]
 
-        container = SkygearContainer(api_key=skygear_config.app.master_key,
+        container = SkygearContainer(api_key=skyoptions.masterkey,
                                      user_id=current_user_id())
         container.send_action('record:save', {
             'database_id': '_public',

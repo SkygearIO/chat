@@ -1,7 +1,7 @@
 import skygear
 from skygear.container import SkygearContainer
 from skygear.models import DirectAccessControlEntry, PublicAccessControlEntry
-from skygear.skyconfig import config as skygear_config
+from skygear.options import options as skyoptions
 from skygear.utils.context import current_user_id
 
 from .exc import (InvalidArgumentException, NotInConversationException,
@@ -18,7 +18,7 @@ class Conversation():
 
         self.master_key = master_key
         if self.master_key is None:
-            self.master_key = skygear_config.app.master_key
+            self.master_key = skyoptions.masterkey
 
         self.record = record
 

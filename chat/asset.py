@@ -3,7 +3,7 @@ import hashlib
 import hmac
 from datetime import datetime, timedelta
 
-from skygear.skyconfig import config as skygear_config
+from skygear.settings import settings
 
 
 # TODO: This does not fit cloud deployment. Need to be removed.
@@ -32,8 +32,8 @@ def sign_asset_url(name):
 
 
 def _asset_prefix():
-    return skygear_config.asset_signer.url_prefix
+    return settings.chat.asset_store_url_prefix
 
 
 def _sign_secret():
-    return skygear_config.asset_signer.secret
+    return settings.chat.asset_store_secret
