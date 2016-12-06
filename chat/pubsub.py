@@ -1,6 +1,6 @@
 from skygear.models import Record
-from skygear.pubsub import Hub
 from skygear.options import options as skyoptions
+from skygear.pubsub import Hub
 
 from .encoding import serialize_record
 from .utils import _get_channel_by_user_id
