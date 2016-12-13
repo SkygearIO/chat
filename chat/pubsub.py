@@ -21,6 +21,7 @@ def _publish_record_event(user_id: str,
                           event: str,
                           record: Record) -> None:
     _publish_event(user_id, event, {
+        'event_type': event,
         'type': 'record',
         'record_type': record_type,
         'record': serialize_record(record)
