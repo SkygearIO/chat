@@ -12,10 +12,10 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
     def setUp(self):
         self.conn = None
         self.patchers = [
-            patch('chat.conversation.skygear_config',
-                  Mock(return_value={'app': {'master_key': 'secret'}})),
-            patch('chat.user_conversation.skygear_config',
-                  Mock(return_value={'app': {'master_key': 'secret'}})),
+            patch('chat.conversation.skyoptions',
+                  Mock(return_value={'masterkey': 'secret'})),
+            patch('chat.user_conversation.skyoptions',
+                  Mock(return_value={'masterkey': 'secret'})),
         ]
         for each_patcher in self.patchers:
             each_patcher.start()

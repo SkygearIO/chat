@@ -11,9 +11,9 @@ class TestHandleConversationBeforeDelete(unittest.TestCase):
 
     def setUp(self):
         self.conn = None
-        self.patcher = patch('chat.conversation.skygear_config',
+        self.patcher = patch('chat.conversation.skyoptions',
                              Mock(return_value={
-                                'app': {'master_key': 'secret'}
+                                'masterkey': 'secret'
                              }))
         self.patcher.start()
 

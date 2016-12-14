@@ -20,8 +20,8 @@ class TestPublishEvent(unittest.TestCase):
     @patch('chat.pubsub.Hub', autospec=True)
     @patch('chat.pubsub._get_channel_by_user_id',
            Mock(return_value='channel1'))
-    @patch('chat.pubsub.skygear_config',
-           Mock(return_value={'app': {'api_key': 'changeme'}}))
+    @patch('chat.pubsub.skyoptions',
+           Mock(return_value={'apikey': 'changeme'}))
     def test_pubsub_publish_called(self, mock_hub):
         _publish_record_event('user1', 'message', 'create', self.record())
         self.assertEqual(len(mock_hub.method_calls), 1)
@@ -30,6 +30,7 @@ class TestPublishEvent(unittest.TestCase):
         self.assertEqual(mock_hub.method_calls[0][1][1], {
             'event': 'create',
             'data': {
+                'event_type': 'create',
                 'type': 'record',
                 'record_type': 'message',
                 'record': {
