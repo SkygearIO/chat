@@ -6,9 +6,15 @@
 You can find the SDK code in following repos on github. You can also directly
 install at the package manager. 
 
-JS - chat-SDK-JS(https://github.com/SkygearIO/chat-SDK-JS)
-iOS - chat-SDK-iOS (SKYKit/Chat on cocoapods)
-Android - chat-SDK-Android (io.skygear.chat on jscentre)
+- JS - [chat-SDK-JS](https://www.npmjs.com/package/skygear-chat) on npm
+
+    Source: https://github.com/SkygearIO/chat-SDK-JS
+- iOS - [SKYKitChat](https://cocoapods.org/pods/SKYKitChat) on cocoapods
+
+    Source: https://github.com/SkygearIO/chat-SDK-iOS
+- Android - [chat-SDK-Android] io.skygear.chat on jscentre
+
+    Source: https://github.com/SkygearIO/chat-SDK-Android
 
 ### Get the demo running at Skygear cloud 
 
@@ -48,13 +54,6 @@ def chat_demo():
 
 `https://<your_app_name>.skygeario.com/static/demo/index.html`
 
-__Fourth__
-
-Update database schema
-
-`curl https://<your_app_name>.skygeario.com/chat-plugin-init`
-
-
 ### Understanding the model
 
 In this chat plugin, we have various model. Its responsibility as follow.
@@ -71,7 +70,7 @@ In this chat plugin, we have various model. Its responsibility as follow.
 
 For API detail, please visit the platform specific API filie:
 
-- [JS SDK](./JSAPI.md)
-- [iOS SDK] - WIP
-- [Android SDK] - WIP
+- [JS SDK](https://doc.esdoc.org/github.com/skygeario/chat-SDK-JS/)
+- [iOS SDK](http://cocoadocs.org/docsets/SKYKitChat/)
+- [Android SDK](https://docs.skygear.io/android/plugins/chat/reference/) 
 
