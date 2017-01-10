@@ -5,7 +5,7 @@ from skygear.options import options as skyoptions
 
 def register_initialization_event_handlers(settings):
     @skygear.event("before-plugins-ready")
-    def chat_plugin_init():
+    def chat_plugin_init(config):
         container = SkygearContainer(api_key=skyoptions.masterkey)
         container.send_action(
             'schema:create',
