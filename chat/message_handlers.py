@@ -1,4 +1,5 @@
 from psycopg2.extensions import AsIs
+from psycopg2.extras import Json
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 import skygear
@@ -18,9 +19,6 @@ def get_messages(conversation_id, limit, before_time=None):
     if not conversation.is_participant(current_user_id()):
         raise NotInConversationException()
 
-    # FIXME: After the ACL can be by-pass the ACL, we should query the with
-    # master key
-    # https://github.com/SkygearIO/skygear-server/issues/51
     with db.conn() as conn:
         cur = conn.execute('''
             SELECT
@@ -40,31 +38,68 @@ def get_messages(conversation_id, limit, before_time=None):
             }
         )
 
-        results = []
-        for row in cur:
-            created_stamp = row[1].timestamp()
-            dt = timestamp_to_rfc3339_utcoffset(created_stamp)
-            r = {
-                '_id': 'message/' + row[0],
-                '_created_at': dt,
-                '_created_by': row[2],
-                'body': row[3],
-                'conversation_id': {
-                    '$id': 'conversation/' + row[4],
-                    '$type': 'ref'
-                },
-                'metadata': row[5],
-                'conversation_status': row[6],
-            }
-            if row[7]:
-                r['attachment'] = {
-                    '$type': 'asset',
-                    '$name': row[7],
-                    '$url': sign_asset_url(row[7])
-                }
-            results.append(r)
-
+        results = cursor_to_messages(cur)
         return {'results': results}
+
+
+def get_messages_by_ids(message_ids):
+    '''
+    Return the array of message with gived ids.
+
+    - ACL check will rely on the `participant_ids` of referenced conversation.
+    - For id does not have corresponding message, no error will be reported.
+    - For message that user have no access to, no error will be reported.
+    '''
+    with db.conn() as conn:
+        cur = conn.execute('''
+            SELECT
+                m._id, m._created_at, m._created_by,
+                m.body, m.conversation_id,
+                m.metadata, m.conversation_status,
+                m.attachment
+            FROM %(schema_name)s.message AS m
+            LEFT JOIN %(schema_name)s.conversation
+            ON m.conversation_id=conversation._id
+            WHERE m._id = ANY(%(ids)s)
+            AND conversation.participant_ids @> %(user_id)s
+            ''', {
+                'schema_name': AsIs(_get_schema_name()),
+                'ids': message_ids,
+                'user_id': Json(current_user_id())
+            }
+        )
+
+        results = cursor_to_messages(cur)
+        return {
+            'results': results
+        }
+
+
+def cursor_to_messages(cur):
+    results = []
+    for row in cur:
+        created_stamp = row[1].timestamp()
+        dt = timestamp_to_rfc3339_utcoffset(created_stamp)
+        r = {
+            '_id': 'message/' + row[0],
+            '_created_at': dt,
+            '_created_by': row[2],
+            'body': row[3],
+            'conversation_id': {
+                '$id': 'conversation/' + row[4],
+                '$type': 'ref'
+            },
+            'metadata': row[5],
+            'conversation_status': row[6],
+        }
+        if row[7]:
+            r['attachment'] = {
+                '$type': 'asset',
+                '$name': row[7],
+                '$url': sign_asset_url(row[7])
+            }
+        results.append(r)
+    return results
 
 
 def handle_message_before_save(record, original_record, conn):
@@ -114,3 +149,8 @@ def register_message_lambdas(settings):
     @skygear.op("chat:get_messages", auth_required=True, user_required=True)
     def get_messages_lambda(conversation_id, limit, before_time=None):
         return get_messages(conversation_id, limit, before_time)
+
+    @skygear.op("chat:get_messages_by_ids",
+                auth_required=True, user_required=True)
+    def get_messages_by_ids_lambda(message_ids):
+        return get_messages_by_ids(message_ids)
