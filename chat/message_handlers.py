@@ -127,7 +127,9 @@ def handle_message_after_save(record, original_record, conn):
         conversation_id = record['conversation_id'].recordID.key
         conn.execute('''
             UPDATE %(schema_name)s.user_conversation
-            SET "unread_count" = "unread_count" + 1
+            SET
+                "unread_count" = "unread_count" + 1,
+                "_updated_at" = CURRENT_TIMESTAMP
             WHERE "conversation" = %(conversation_id)s
         ''', {
             'schema_name': AsIs(_get_schema_name()),
