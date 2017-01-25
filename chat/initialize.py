@@ -123,6 +123,14 @@ def register_initialization_event_handlers(settings):
                                 'type': 'datetime'
                             }
                         ]
+                    },
+                    'conversation': {
+                        'fields': [
+                            {
+                                'name': 'last_message',
+                                'type': 'ref(message)'
+                            }
+                        ]
                     }
                 }
             },

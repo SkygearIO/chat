@@ -133,6 +133,15 @@ def handle_message_after_save(record, original_record, conn):
             'schema_name': AsIs(_get_schema_name()),
             'conversation_id': conversation_id
         })
+        conn.execute('''
+            UPDATE %(schema_name)s.conversation
+            SET "last_message" = %(message_id)s
+            WHERE "_id" = %(conversation_id)s
+        ''', {
+            'schema_name': AsIs(_get_schema_name()),
+            'conversation_id': conversation_id,
+            'message_id': record.id.key
+        })
 
 
 def register_message_hooks(settings):
