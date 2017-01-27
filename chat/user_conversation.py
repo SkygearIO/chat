@@ -58,8 +58,9 @@ class UserConversation():
         })
 
 
-def total_unread():
-    user_id = current_user_id()
+def total_unread(user_id=None):
+    if user_id is None:
+        user_id = current_user_id()
     with db.conn() as conn:
         cur = conn.execute('''
             SELECT COUNT(*), SUM("unread_count")
