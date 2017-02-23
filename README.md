@@ -62,6 +62,114 @@ def chat_demo():
 
 `https://<your_app_name>.skygeario.com/static/demo/index.html`
 
+### Quick Start
+
+We provide Quick Start tutorial in different language.
+
+- [Javascript][js-quick-start]
+- [Android][android-quick-start]
+- [iOS][ios-quick-start]
+
+We also have basic guide go through feature by feature.
+
+- [Javascript][js-basic]
+- [Android][android-basic]
+- [iOS][ios-basic]
+
+### Understanding the model
+
+In this chat plugin, we have various model represent different data in
+application. Understanding the model relation make you able to use the plugin
+efficiently. It also enable developer to store application specific data in
+the correct model.
+
+Following is the model relation diagram.
+
+![Entity Relation][er]
+
+#### Overview of models responsibility are as follow.
+
+- User - Skygear provided user. Storing user attributes.
+- Conversation - represent a conversation, it store conversation information
+  like title, last message, no. of participant.
+- Message - actual message display on screen, it store message text,
+  related asset and metadata.
+- UserConversation - represent a user is participating a conversation. It
+  stores user specific information to a conversation, like last
+  read time and unread count.
+- Receipt - Store the user receipt on a message.
+
+### Details attributes on models
+
+Following is the table of attributes ensured by this plugin.
+
+Note that `User` is Skygear provided User profile model.
+
+__User__
+
+| Attributes  | Type                | Description  |
+| ------ | ------------------- | ------------ |
+| name  | <code>String</code> | |
+
+__Conversation__
+
+| Attributes  | Type                | Description  |
+| ------ | ------------------- | ------------ |
+| title  | <code>String</code> | |
+| admin_ids | <code>JSON Array</code> | |
+| participant_ids | <code>JSON Array</code> | |
+| participant_count | <code>Number</code> | |
+| distinct_by_participants | <code>Boolean</code> | |
+| metadata | <code>JSON Object</code> | |
+| last_message | <code>Reference</code> | |
+
+__Message__
+
+| Attributes  | Type                | Description  |
+| ------ | ------------------- | ------------ |
+| body  | <code>String</code> | |
+| conversation_status | <code>String</code> | Summary of receipt status |
+| attachment | <code>Asset</code> | |
+| metadata | <code>JSON Object</code> | |
+| conversation_id | <code>Reference</code> | |
+
+__UserConversation__
+
+| Attributes  | Type                | Description  |
+| ------ | ------------------- | ------------ |
+| unread_count  | <code>Number</code> | |
+| last_read_message | <code>Reference</code> | |
+| user | <code>Reference</code> | |
+| conversation | <code>Reference</code> | |
+
+__Recript__
+
+| Attributes  | Type                | Description  |
+| ------ | ------------------- | ------------ |
+| read_at  | <code>Datetime</code> | |
+| delivered_at | <code>Datetime</code> | |
+| user_id | <code>Reference</code> | |
+| message_id | <code>Reference</code> | |
+
+## Detail API
+
+For API detail, please visit the platform specific API filie:
+
+- [JS SDK](https://doc.esdoc.org/github.com/skygeario/chat-SDK-JS/)
+- [iOS SDK](http://cocoadocs.org/docsets/SKYKitChat/)
+- [Android SDK](https://docs.skygear.io/android/plugins/chat/reference/)
+- [Skygear.io](https://skygear.io)
+
+[er]: https://github.com/SkygearIO/chat/raw/master/doc/er.png "ER diagram"
+[js-quick-start]: https://docs.skygear.io/guides/chat-quick-start/js/
+[android-quick-start]: https://docs.skygear.io/guides/chat-quick-start/android/
+[ios-quick-start]: https://docs.skygear.io/guides/chat-quick-start/ios/
+[js-basic]: https://docs.skygear.io/guides/chat/basics/js/
+[android-basic]: https://docs.skygear.io/guides/chat/basics/android/
+[ios-basic]: https://docs.skygear.io/guides/chat/basics/ios/
+
+## Some sample code
+
 ### Sending push notification
 
 Push notification can be implemented by the following code.
@@ -130,25 +238,3 @@ def push_message_after_save_handler(record, original_record, conn):
             }
         )
 ```
-
-### Understanding the model
-
-In this chat plugin, we have various model. Its responsibility as follow.
-
-- Conversation - storing information on who is the admins, conversation title,
-  last message arrival time, etc.
-- Message - actual message to be display on screen, including the related
-  asset and metadata.
-- UserConversation - the exist of this relation represent a user is participant
-  of a conversation. It store information on user specific information to a
-  conversation, like last read time and unread count.
-- UserChatStatus - Storing data like `last_online`.
-- Receipt - Storing the user receipt on message.
-
-For API detail, please visit the platform specific API filie:
-
-- [JS SDK](https://doc.esdoc.org/github.com/skygeario/chat-SDK-JS/)
-- [iOS SDK](http://cocoadocs.org/docsets/SKYKitChat/)
-- [Android SDK](https://docs.skygear.io/android/plugins/chat/reference/)
-- [Skygear.io](https://skygear.io)
-
