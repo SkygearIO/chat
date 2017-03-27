@@ -142,7 +142,7 @@ __UserConversation__
 | user | <code>Reference</code> | |
 | conversation | <code>Reference</code> | |
 
-__Recript__
+__Receipt__
 
 | Attributes  | Type                | Description  |
 | ------ | ------------------- | ------------ |
