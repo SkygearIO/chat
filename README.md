@@ -177,6 +177,7 @@ Please ensure APNS certificate and private key are properly setup,
 if you are using [Skygear.io], you can configure it at the setting panel.
 
 ```python
+import skygear
 from skygear.container import SkygearContainer
 from skygear.options import options as skyoptions
 from skygear.action import push_user
@@ -188,6 +189,7 @@ from skygear.action import push_user
 # you should use `from .chat import ...` instead of `from chat import ...`
 from chat.user_conversation import total_unread
 from chat.conversation import Conversation
+from chat.message import Message
 
 # Create a container so we can talk to skygear server
 container = SkygearContainer(api_key=skyoptions.masterkey)
@@ -232,8 +234,11 @@ def push_message_after_save_handler(record, original_record, conn):
                 'apns': {
                     'aps': {
                         'alert': push_message,
+                        'sound': 'default',
+                        'badge': total_unread_count,
                     },
-                    'badge': total_unread_count,
+                    'from': 'skygear-chat',
+                    'operation': 'notification'
                 },
             }
         )
