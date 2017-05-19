@@ -146,6 +146,25 @@ class ConversationChangeOperation():
             self.is_new = True
         self.new_conversation = Conversation(new_conversation_record)
 
+    @property
+    def new_participants(self):
+        return self.new_conversation.participant_set
+
+    @property
+    def old_participants(self):
+        old_participants = set()
+        if self.old_conversation is not None:
+            old_participants = self.old_conversation.participant_set
+        return old_participants
+
+    @property
+    def participants_to_create(self):
+        return self.new_participants - self.old_participants
+
+    @property
+    def participants_to_delete(self):
+        return self.old_participants - self.new_participants
+
     def validate(self):
         user_id = current_user_id()
         if self.is_new:
@@ -165,21 +184,14 @@ class ConversationChangeOperation():
                     "no permission to edit conversation")
 
     def update_user_conversations(self):
-        old_participants = set()
-        if self.old_conversation is not None:
-            old_participants = self.old_conversation.participant_set
-        new_participants = self.new_conversation.participant_set
-
-        participants_to_delete = old_participants - new_participants
-        for each_participant_id in participants_to_delete:
+        for each_participant_id in self.participants_to_delete:
             each_participant = UserConversation(
                 self.new_conversation,
                 each_participant_id
             )
             each_participant.delete()
 
-        participants_to_create = new_participants - old_participants
-        for each_participant_id in participants_to_create:
+        for each_participant_id in self.participants_to_create:
             each_participant = UserConversation(
                 self.new_conversation,
                 each_participant_id
@@ -187,14 +199,22 @@ class ConversationChangeOperation():
             each_participant.create()
 
     def notify_users(self):
-        users_to_publish = self.new_conversation.participant_set
         new_record = self.new_conversation.record
-        if self.old_conversation is not None:
-            old_participants = self.old_conversation.participant_set
-            users_to_publish = users_to_publish | old_participants
-        for each_user in users_to_publish:
+
+        unchange_participants = self.new_participants & self.old_participants
+        for each_user in unchange_participants:
             _publish_record_event(
                 each_user, "conversation", "update", new_record)
+
+        if self.old_conversation:
+            old_record = self.old_conversation.record
+            for each_user in self.participants_to_delete:
+                _publish_record_event(
+                    each_user, "conversation", "delete", old_record)
+
+        for each_user in self.participants_to_create:
+            _publish_record_event(
+                each_user, "conversation", "create", new_record)
 
 
 def handle_conversation_before_save(record, original_record, conn):
