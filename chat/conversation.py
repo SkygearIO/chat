@@ -201,15 +201,16 @@ class ConversationChangeOperation():
     def notify_users(self):
         new_record = self.new_conversation.record
 
-        unchange_participanits = self.new_participants & self.old_participants
-        for each_user in unchange_participanits:
+        unchange_participants = self.new_participants & self.old_participants
+        for each_user in unchange_participants:
             _publish_record_event(
                 each_user, "conversation", "update", new_record)
 
-        for each_user in self.participants_to_delete:
+        if self.old_conversation:
             old_record = self.old_conversation.record
-            _publish_record_event(
-                each_user, "conversation", "delete", old_record)
+            for each_user in self.participants_to_delete:
+                _publish_record_event(
+                    each_user, "conversation", "delete", old_record)
 
         for each_user in self.participants_to_create:
             _publish_record_event(
