@@ -4,6 +4,40 @@ from skygear.options import options as skyoptions
 
 
 def register_initialization_event_handlers(settings):
+    def _base_message_fields():
+        return [{
+                    'name': 'attachment',
+                    'type': 'asset'
+                },
+                {
+                    'name': 'body',
+                    'type': 'string'
+                },
+                {
+                    'name': 'metadata',
+                    'type': 'json'
+                },
+                {
+                    'name': 'conversation_id',
+                    'type': 'ref(conversation)'
+                },
+                {
+                    'name': 'conversation_status',
+                    'type': 'string'
+                },
+                {
+                    'name': 'seq',
+                    'type': 'sequence'
+                }]
+
+    def _message_schema():
+        fields = _base_message_fields() + [{'name': 'deleted', 'type':'boolean'}]
+        return {'fields': fields}
+
+    def _message_history_schema():
+        fields = _base_message_fields() + [{'name':'parent', 'type':'ref(message)'}]
+        return {'fields': fields}
+
     @skygear.event("before-plugins-ready")
     def chat_plugin_init(config):
         container = SkygearContainer(api_key=skyoptions.masterkey)
@@ -52,30 +86,8 @@ def register_initialization_event_handlers(settings):
             'schema:create',
             {
                 'record_types': {
-                    'message': {
-                        'fields': [
-                            {
-                                'name': 'attachment',
-                                'type': 'asset'
-                            },
-                            {
-                                'name': 'body',
-                                'type': 'string'
-                            },
-                            {
-                                'name': 'metadata',
-                                'type': 'json'
-                            },
-                            {
-                                'name': 'conversation_id',
-                                'type': 'ref(conversation)'
-                            },
-                            {
-                                'name': 'conversation_status',
-                                'type': 'string'
-                            }
-                        ]
-                    }
+                    'message': _message_schema(),
+                    'message_history': _message_history_schema()
                 }
             },
             plugin_request=True

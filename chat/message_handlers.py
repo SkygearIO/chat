@@ -8,11 +8,11 @@ from skygear.utils.context import current_user_id
 
 from .asset import sign_asset_url
 from .conversation import Conversation
-from .exc import NotInConversationException, SkygearChatException
+from .exc import NotInConversationException, SkygearChatException, AlreadyDeletedException, MessageNotFoundException
 from .message import Message
 from .utils import (_get_conversation, _get_schema_name,
                     current_context_has_master_key)
-
+from .message_history import MessageHistory
 
 def get_messages(conversation_id, limit, before_time=None):
     conversation = Conversation(_get_conversation(conversation_id))
@@ -28,6 +28,7 @@ def get_messages(conversation_id, limit, before_time=None):
             FROM %(schema_name)s.message
             WHERE conversation_id = %(conversation_id)s
             AND (_created_at < %(before_time)s OR %(before_time)s IS NULL)
+            AND deleted = false
             ORDER BY _created_at DESC
             LIMIT %(limit)s;
             ''', {
@@ -108,8 +109,15 @@ def handle_message_before_save(record, original_record, conn):
     if not conversation.is_participant(current_user_id()):
         raise NotInConversationException()
 
-    if original_record is not None and not current_context_has_master_key():
-        raise SkygearChatException("message is not editable")
+    if original_record is not None and message.record['deleted']:
+        raise AlreadyDeletedException()
+
+    if original_record is None:
+        message.record['deleted'] = False
+        message.record['revision'] = 1
+    else:
+        message_history = MessageHistory(message)
+        message_history.save()
 
     if message.record.get('conversation_status', None) is None:
         message.record['conversation_status'] = 'delivered'
@@ -145,6 +153,20 @@ def handle_message_after_save(record, original_record, conn):
             'message_id': record.id.key
         })
 
+def delete_message(message_id):
+    '''
+    Delete a message
+    - Mark message as deleted
+    - Update last_message and last_read_message
+    '''
+    #TODO: finish delete_message function
+    message = Message.fetch(message)
+    if messsage is None:
+        raise MessageNotFoundException()
+    if message.record['deleted']:
+        raise AlreadyDeletedException()
+    message.record['deleted'] = True
+    message.save()
 
 def register_message_hooks(settings):
     @skygear.before_save("message", async=False)
@@ -155,13 +177,19 @@ def register_message_hooks(settings):
     def message_after_save_handler(record, original_record, conn):
         return handle_message_after_save(record, original_record, conn)
 
+    @skygear.before_delete("message", async=False)
+    def message_before_delete_handler(record, original_record, conn):
+        raise NotSupportedException()
 
 def register_message_lambdas(settings):
     @skygear.op("chat:get_messages", auth_required=True, user_required=True)
     def get_messages_lambda(conversation_id, limit, before_time=None):
         return get_messages(conversation_id, limit, before_time)
 
-    @skygear.op("chat:get_messages_by_ids",
-                auth_required=True, user_required=True)
+    @skygear.op("chat:get_messages_by_ids", auth_required=True, user_required=True)
     def get_messages_by_ids_lambda(message_ids):
         return get_messages_by_ids(message_ids)
+
+    @skygear.op("chat:delete_message", auth_required=True, user_required=True)
+    def delete_message_lambda(message_id):
+        return delete_message(message_id)

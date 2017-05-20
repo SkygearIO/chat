@@ -18,6 +18,21 @@ class NotInConversationException(SkygearChatException):
             PermissionDenied
         )
 
+class MessageNotFoundException(SkygearChatException):
+    def __init__(self):
+        super().__init__(
+            "message not found",
+            InvalidArgument
+        )
+
+class AlreadyDeletedException(SkygearChatException):
+    def __init__(self):
+        super().__init__(
+            "message already deleted",
+            InvalidArgument
+        )
+
+
 
 class NotSupportedException(SkygearChatException):
     def __init__(self, message=None):
