@@ -45,7 +45,7 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
                 '$type': 'ref',
                 '$id': 'conversation/1'
             },
-            'body': 'hihi original'
+            'body': 'hihi'
         })
 
     @patch('chat.message._get_conversation', Mock(
@@ -61,14 +61,3 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
         with self.assertRaises(SkygearChatException) as cm:
             handle_message_before_save(
                 self.record(), None, self.conn)
-
-    @patch('chat.message._get_conversation', Mock(
-        return_value={'participant_ids': ['user1', 'user2'],}))
-    @patch('chat.message_handlers.current_user_id', Mock(
-        return_value='user1'))
-    @patch('chat.message_handlers.current_context_has_master_key', Mock(return_value=False))
-    def test_edit_message_record(self):
-        handle_message_before_save(
-                self.record(), self.original_record(), self.conn)
-
-
