@@ -1,7 +1,8 @@
 import uuid
-from skygear.transmitter.encoding import serialize_record
+
 from skygear.container import SkygearContainer
 from skygear.options import options as skyoptions
+from skygear.transmitter.encoding import serialize_record
 from skygear.utils.context import current_user_id
 
 

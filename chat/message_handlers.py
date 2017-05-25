@@ -8,11 +8,11 @@ from skygear.utils.context import current_user_id
 
 from .asset import sign_asset_url
 from .conversation import Conversation
-from .exc import NotInConversationException, AlreadyDeletedException
-from .exc import MessageNotFoundException, NotSupportedException
+from .exc import (AlreadyDeletedException, MessageNotFoundException,
+                  NotInConversationException, NotSupportedException)
 from .message import Message
-from .utils import (_get_conversation, _get_schema_name)
 from .message_history import MessageHistory
+from .utils import _get_conversation, _get_schema_name
 
 
 def get_messages(conversation_id, limit, before_time=None):
