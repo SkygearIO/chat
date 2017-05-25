@@ -31,11 +31,17 @@ def register_initialization_event_handlers(settings):
                 }]
 
     def _message_schema():
-        fields = _base_message_fields() + [{'name': 'deleted', 'type':'boolean'}]
+        fields = _base_message_fields() + [{
+                                            'name': 'deleted',
+                                            'type': 'boolean'
+                                           }]
         return {'fields': fields}
 
     def _message_history_schema():
-        fields = _base_message_fields() + [{'name':'parent', 'type':'ref(message)'}]
+        fields = _base_message_fields() + [{
+                                            'name': 'parent',
+                                            'type': 'ref(message)'
+                                           }]
         return {'fields': fields}
 
     @skygear.event("before-plugins-ready")

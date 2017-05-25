@@ -4,15 +4,18 @@ from skygear.container import SkygearContainer
 from skygear.options import options as skyoptions
 from skygear.utils.context import current_user_id
 
+
 class MessageHistory:
     def __init__(self, message):
         message_record = serialize_record(message.record)
         self.record = {}
-        for key in ['attachment', 'body', 'metadata', 'conversation_id', 'conversation_status']:
+        for key in ['attachment', 'body', 'metadata',
+                    'conversation_id', 'conversation_status']:
             if key in message_record:
                 self.record[key] = message_record[key]
-        self.record['parent'] = {'$type': 'ref', '$id': 'message/' + message.record.id._key}
-        self.record['_id'] = 'message_history/' + str(uuid.uuid4()) 
+        self.record['parent'] = {'$type': 'ref',
+                                 '$id': 'message/' + message.record.id._key}
+        self.record['_id'] = 'message_history/' + str(uuid.uuid4())
 
     def save(self) -> None:
         """

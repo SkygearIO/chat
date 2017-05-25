@@ -200,7 +200,7 @@ class Message:
         container = SkygearContainer(api_key=skyoptions.masterkey,
                                      user_id=current_user_id())
         container.send_action('record:save', {
-            'database_id': '_public',
+            'database_id': '_private',
             'records': [serialize_record(self.record)],
             'atomic': True
         })

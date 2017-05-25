@@ -6,6 +6,8 @@ from skygear.transmitter.encoding import deserialize_record
 from ..exc import SkygearChatException
 from ..message_handlers import handle_message_after_save
 
+import testing.postgresql
+from sqlalchemy import create_engine
 
 class TestHandleMessageAfterSave(unittest.TestCase):
 
@@ -60,3 +62,22 @@ class TestHandleMessageAfterSave(unittest.TestCase):
         self.assertIs(conn.execute.call_args_list[0][0][1]['conversation_id'], '1')
         self.assertIs(conn.execute.call_args_list[1][0][1]['conversation_id'], '1')
         self.assertIs(conn.execute.call_args_list[1][0][1]['message_id'], '1')
+
+
+    @patch('chat.message._publish_record_event')
+    @patch('chat.message_handlers._get_schema_name', Mock(return_value='app_dev'))
+    @patch('chat.message._get_conversation', Mock(return_value={
+        'participant_ids': ['user1', 'user2']}))
+    def test_publish_event_count(self, mock_publish_event):
+        conn = Mock()
+        handle_message_after_save(self.record(), None, conn)
+        self.assertIs(mock_publish_event.call_count, 2)
+        self.assertIs(conn.execute.call_count, 2)
+        self.assertIs(conn.execute.call_args_list[0][0][1]['conversation_id'], '1')
+        self.assertIs(conn.execute.call_args_list[1][0][1]['conversation_id'], '1')
+        self.assertIs(conn.execute.call_args_list[1][0][1]['message_id'], '1')
+
+    def test_asdf(self):
+        with testing.postgresql.Postgresql() as postgresql:
+            engine = create_engine(postgresql.url())
+             
