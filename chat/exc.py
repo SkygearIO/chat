@@ -19,6 +19,22 @@ class NotInConversationException(SkygearChatException):
         )
 
 
+class MessageNotFoundException(SkygearChatException):
+    def __init__(self):
+        super().__init__(
+            "message not found",
+            InvalidArgument
+        )
+
+
+class AlreadyDeletedException(SkygearChatException):
+    def __init__(self):
+        super().__init__(
+            "message is already deleted",
+            InvalidArgument
+        )
+
+
 class NotSupportedException(SkygearChatException):
     def __init__(self, message=None):
         message = message or "This operation is not supported."

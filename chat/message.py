@@ -8,7 +8,7 @@ from skygear.transmitter.encoding import deserialize_record, serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
-from .exc import SkygearChatException
+from .exc import AlreadyDeletedException, SkygearChatException
 from .pubsub import _publish_record_event
 from .utils import _get_conversation, _get_schema_name, to_rfc3339_or_none
 
@@ -99,6 +99,19 @@ class Message:
         obj = cls()
         obj.record = record
         return obj
+
+    def delete(self) -> None:
+        """
+        Soft-delete a message
+        - Mark message as deleted
+        - Update last_message and last_read_message
+        """
+
+        if self.record['deleted']:
+            raise AlreadyDeletedException()
+
+        self.record['deleted'] = True
+        self.save()
 
     def fetchConversationRecord(self) -> Record:
         """
@@ -200,7 +213,7 @@ class Message:
         container = SkygearContainer(api_key=skyoptions.masterkey,
                                      user_id=current_user_id())
         container.send_action('record:save', {
-            'database_id': '_public',
+            'database_id': '_private',
             'records': [serialize_record(self.record)],
             'atomic': True
         })
