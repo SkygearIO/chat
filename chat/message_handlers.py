@@ -3,13 +3,14 @@ from psycopg2.extras import Json
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 import skygear
+from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .asset import sign_asset_url
 from .conversation import Conversation
-from .exc import (AlreadyDeletedException, MessageNotFoundException,
-                  NotInConversationException, NotSupportedException)
+from .exc import (AlreadyDeletedException, NotInConversationException,
+                  NotSupportedException)
 from .message import Message
 from .message_history import MessageHistory
 from .utils import _get_conversation, _get_schema_name
@@ -200,18 +201,11 @@ def _update_user_conversation_last_read_message(conn, last_message,
 def delete_message(message_id):
     '''
     Delete a message
-    - Mark message as deleted
+    - Soft-delete message from record
     - Update last_message and last_read_message
     '''
-    message = Message.fetch(message_id)
-    if message is None:
-        raise MessageNotFoundException()
-
-    if message.record['deleted']:
-        raise AlreadyDeletedException()
-
-    message.record['deleted'] = True
-    message.save()
+    message = Message.delete(message_id)
+    record = serialize_record(message.record)
 
     with db.conn() as conn:
         new_last_message_id = _get_new_last_message_id(conn, message)
@@ -220,7 +214,7 @@ def delete_message(message_id):
                                           new_last_message_id)
         _update_user_conversation_last_read_message(conn, message,
                                                     new_last_message_id)
-    return message.record
+    return record
 
 
 def register_message_hooks(settings):
