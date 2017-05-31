@@ -1,1 +1,1 @@
-FROM quay.io/skygeario/py-skygear:v0.23.0
+FROM quay.io/skygeario/py-skygear:canary-onbuild
