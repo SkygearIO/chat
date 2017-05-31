@@ -9,8 +9,8 @@ from skygear.utils.context import current_user_id
 
 from .asset import sign_asset_url
 from .conversation import Conversation
-from .exc import (AlreadyDeletedException, NotInConversationException,
-                  NotSupportedException)
+from .exc import (AlreadyDeletedException, MessageNotFoundException,
+                  NotInConversationException, NotSupportedException)
 from .message import Message
 from .message_history import MessageHistory
 from .utils import _get_conversation, _get_schema_name
@@ -204,7 +204,11 @@ def delete_message(message_id):
     - Soft-delete message from record
     - Update last_message and last_read_message
     '''
-    message = Message.delete(message_id)
+    message = Message.fetch(message_id)
+    if message is None:
+        raise MessageNotFoundException()
+
+    message.delete()
     record = serialize_record(message.record)
 
     with db.conn() as conn:
