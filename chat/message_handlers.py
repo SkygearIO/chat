@@ -118,7 +118,7 @@ def handle_message_before_save(record, original_record, conn):
         message.record['deleted'] = False
         message.record['revision'] = 1
     else:
-        message_history = MessageHistory(message)
+        message_history = MessageHistory(Message.from_record(original_record))
         message_history.save()
 
     if message.record.get('conversation_status', None) is None:
@@ -129,7 +129,13 @@ def handle_message_before_save(record, original_record, conn):
 
 def handle_message_after_save(record, original_record, conn):
     message = Message.from_record(record)
-    event_type = 'create' if original_record is None else 'update'
+
+    event_type = 'create'
+    if original_record is not None:
+        event_type = 'update'
+    if record.get('deleted', False):
+        event_type = 'delete'
+
     message.notifyParticipants(event_type)
 
     if original_record is None:
