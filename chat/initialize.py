@@ -18,11 +18,11 @@ def register_initialization_event_handlers(settings):
                     'type': 'json'
                 },
                 {
-                    'name': 'conversation_id',
+                    'name': 'conversation',
                     'type': 'ref(conversation)'
                 },
                 {
-                    'name': 'conversation_status',
+                    'name': 'message_status',
                     'type': 'string'
                 },
                 {
@@ -125,11 +125,11 @@ def register_initialization_event_handlers(settings):
                     'receipt': {
                         'fields': [
                             {
-                                'name': 'user_id',
+                                'name': 'user',
                                 'type': 'ref(user)'
                             },
                             {
-                                'name': 'message_id',
+                                'name': 'message',
                                 'type': 'ref(message)'
                             },
                             {

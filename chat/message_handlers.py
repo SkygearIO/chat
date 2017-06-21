@@ -25,10 +25,10 @@ def get_messages(conversation_id, limit, before_time=None):
         cur = conn.execute('''
             SELECT
                 _id, _created_at, _created_by,
-                body, conversation_id, metadata, conversation_status,
+                body, conversation, metadata, message_status,
                 attachment
             FROM %(schema_name)s.message
-            WHERE conversation_id = %(conversation_id)s
+            WHERE conversation = %(conversation_id)s
             AND (_created_at < %(before_time)s OR %(before_time)s IS NULL)
             AND deleted = false
             ORDER BY _created_at DESC
@@ -57,12 +57,12 @@ def get_messages_by_ids(message_ids):
         cur = conn.execute('''
             SELECT
                 m._id, m._created_at, m._created_by,
-                m.body, m.conversation_id,
-                m.metadata, m.conversation_status,
+                m.body, m.conversation,
+                m.metadata, m.message_status,
                 m.attachment
             FROM %(schema_name)s.message AS m
             LEFT JOIN %(schema_name)s.conversation
-            ON m.conversation_id=conversation._id
+            ON m.conversation=conversation._id
             WHERE m._id = ANY(%(ids)s)
             AND conversation.participant_ids @> %(user_id)s
             ''', {
@@ -88,12 +88,12 @@ def cursor_to_messages(cur):
             '_created_at': dt,
             '_created_by': row[2],
             'body': row[3],
-            'conversation_id': {
+            'conversation': {
                 '$id': 'conversation/' + row[4],
                 '$type': 'ref'
             },
             'metadata': row[5],
-            'conversation_status': row[6],
+            'message_status': row[6],
         }
         if row[7]:
             r['attachment'] = {
@@ -121,8 +121,8 @@ def handle_message_before_save(record, original_record, conn):
         message_history = MessageHistory(Message.from_record(original_record))
         message_history.save()
 
-    if message.record.get('conversation_status', None) is None:
-        message.record['conversation_status'] = 'delivered'
+    if message.record.get('message_status', None) is None:
+        message.record['message_status'] = 'delivered'
 
     return message.record
 
@@ -140,7 +140,7 @@ def handle_message_after_save(record, original_record, conn):
 
     if original_record is None:
         # Update all UserConversation unread count by 1
-        conversation_id = record['conversation_id'].recordID.key
+        conversation_id = record['conversation'].recordID.key
         conn.execute('''
             UPDATE %(schema_name)s.user_conversation
             SET
@@ -182,7 +182,7 @@ def _update_conversation_last_message(conn, conversation, last_message,
                                       new_last_message_id):
     last_message_key = 'message/' + last_message.record.id.key
     if last_message_key == conversation.record['last_message']['$id']:
-        conversation_id = last_message.record['conversation_id'].recordID.key
+        conversation_id = last_message.record['conversation'].recordID.key
         conn.execute('''
         UPDATE %(schema_name)s.conversation
         SET last_message = %(new_last_message_id)s

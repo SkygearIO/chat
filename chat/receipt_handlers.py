@@ -11,12 +11,12 @@ from .receipt import create_delivered_receipts, create_read_receipts
 from .utils import is_str_list
 
 
-def _conversation_status_may_change(
+def _message_status_may_change(
     new_receipt: Record,
     old_receipt: Record
 ) -> bool:
     """
-    Return true if the conversation status of a message may change. This
+    Return true if the message status of a message may change. This
     is used to prevent status to change unnecessarily.
     """
     if not old_receipt:
@@ -29,17 +29,17 @@ def handle_receipt_before_save(record, original_record, conn):
     """
     Check the receipt before saving.
     """
-    message_id = record.get('message_id', '')
-    if not message_id:
-        raise SkygearChatException('missing message_id')
+    message_ref = record.get('message', '')
+    if not message_ref:
+        raise SkygearChatException('missing message')
 
-    message = Message.fetch(message_id.recordID.key)
+    message = Message.fetch(message_ref.recordID.key)
     conversation = Conversation(message.conversationRecord)
     if not conversation.is_participant(current_user_id()):
         raise NotInConversationException()
 
-    user_id = record.get('user_id', None)
-    if not user_id or user_id.recordID.key != current_user_id():
+    user_ref = record.get('user', None)
+    if not user_ref or user_ref.recordID.key != current_user_id():
         raise SkygearChatException('argument exception')
 
     if original_record:
@@ -69,12 +69,12 @@ def handle_receipt_after_save(record, original_record, conn):
             original_record.get('read_at', None)
         )
 
-    if _conversation_status_may_change(record, original_record):
+    if _message_status_may_change(record, original_record):
         logging.debug(
-            'updating conversation status because receipt read_at has changed'
+            'updating message status because receipt read_at has changed'
         )
-        message = Message.fetch(record['message_id'].recordID.key)
-        message.updateConversationStatus(conn)
+        message = Message.fetch(record['message'].recordID.key)
+        message.updateMessageStatus(conn)
         message.notifyParticipants()
 
 

@@ -20,8 +20,8 @@ class Receipt:
             user_id,
             None,
             data={
-                'user_id': Reference(RecordID('user', user_id)),
-                'message_id': Reference(RecordID('message', message_id))
+                'user': Reference(RecordID('user', user_id)),
+                'message': Reference(RecordID('message', message_id))
             }
         )
 

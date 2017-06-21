@@ -11,7 +11,7 @@ class MessageHistory:
         message_record = serialize_record(message.record)
         self.record = {}
         for key in ['attachment', 'body', 'metadata',
-                    'conversation_id', 'conversation_status']:
+                    'conversation', 'message_status']:
             if key in message_record:
                 self.record[key] = message_record[key]
         self.record['parent'] = {'$type': 'ref',

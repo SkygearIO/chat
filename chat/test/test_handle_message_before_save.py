@@ -29,7 +29,7 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
             '_id': 'message/1',
             '_access': None,
             '_ownerID': 'user1',
-            'conversation_id': {
+            'conversation': {
                 '$type': 'ref',
                 '$id': 'conversation/1'
             },
@@ -41,7 +41,7 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
             '_id': 'message/1',
             '_access': None,
             '_ownerID': 'user1',
-            'conversation_id': {
+            'conversation': {
                 '$type': 'ref',
                 '$id': 'conversation/1'
             },

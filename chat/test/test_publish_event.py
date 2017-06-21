@@ -13,7 +13,7 @@ class TestPublishEvent(unittest.TestCase):
             '_id': 'message/1',
             '_access': None,
             '_ownerID': 'user1',
-            'conversation_id': 'conversation1',
+            'conversation': 'conversation1',
             'body': 'hihi'
         })
 
@@ -37,7 +37,7 @@ class TestPublishEvent(unittest.TestCase):
                     '_id': 'message/1',
                     '_access': None,
                     '_ownerID': 'user1',
-                    'conversation_id': 'conversation1',
+                    'conversation': 'conversation1',
                     'body': 'hihi'
                 }
             }

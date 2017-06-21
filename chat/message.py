@@ -66,7 +66,7 @@ class Message:
         messageDict = response['result'][0]
         obj.record = deserialize_record(messageDict)
         # Conversation is in publicDB, do cannot transient include
-        print(obj.record['conversation_id'].recordID.key)
+        print(obj.record['conversation'].recordID.key)
         response = container.send_action(
             'record:query',
             {
@@ -80,7 +80,7 @@ class Message:
                         '$type': 'keypath',
                         '$val': '_id'
                     },
-                    obj.record['conversation_id'].recordID.key
+                    obj.record['conversation'].recordID.key
                 ]
             }
         )
@@ -119,7 +119,7 @@ class Message:
         is created using a Record rather than fetching the Record
         from the database.
         """
-        conversation_id = self.record['conversation_id'].recordID.key
+        conversation_id = self.record['conversation'].recordID.key
         self.conversationRecord = _get_conversation(conversation_id)
         return self.conversationRecord
 
@@ -130,10 +130,10 @@ class Message:
         receipts = list()
         with db.conn() as conn:
             cur = conn.execute('''
-                SELECT user_id, read_at, delivered_at
+                SELECT user, read_at, delivered_at
                 FROM %(schema_name)s.receipt
                 WHERE
-                    "message_id" = %(message_id)s
+                    "message" = %(message_id)s
                 ''', {
                     'schema_name': AsIs(_get_schema_name()),
                     'message_id': self.record.id.key
@@ -142,15 +142,15 @@ class Message:
 
             for row in cur:
                 receipts.append({
-                    'user_id': row['user_id'],
+                    'user': row['user'],
                     'read_at': to_rfc3339_or_none(row['read_at']),
                     'delivered_at': to_rfc3339_or_none(row['delivered_at'])
                 })
         return receipts
 
-    def updateConversationStatus(self, conn) -> bool:
+    def updateMessageStatus(self, conn) -> bool:
         """
-        Update the conversation status field by querying the database for
+        Update the message status field by querying the database for
         all receipt statuses.
         """
         if not self.conversationRecord:
@@ -159,9 +159,9 @@ class Message:
         cur = conn.execute('''
             WITH
               read_count AS (
-                SELECT DISTINCT COUNT(user_id) as count
+                SELECT DISTINCT COUNT(user) as count
                 FROM %(schema_name)s.receipt
-                WHERE message_id = %(message_id)s
+                WHERE message = %(message_id)s
                     AND read_at IS NOT NULL
               ),
               participant_count AS (
@@ -171,7 +171,7 @@ class Message:
               )
             UPDATE %(schema_name)s.message
             SET _updated_at = NOW(),
-                conversation_status =
+                message_status =
                   CASE
                     WHEN read_count.count = 0 THEN 'delivered'
                     WHEN read_count.count < participant_count.count
@@ -180,7 +180,7 @@ class Message:
                   END
             FROM read_count, participant_count
             WHERE _id = %(message_id)s
-            RETURNING _updated_at, conversation_status
+            RETURNING _updated_at, message_status
             ''', {
                 'schema_name': AsIs(_get_schema_name()),
                 'message_id': self.record.id.key,
@@ -191,7 +191,7 @@ class Message:
         row = cur.fetchone()
         if row is not None:
             self.record['_updated_at'] = row[0]
-            self.record['conversation_status'] = row[1]
+            self.record['message_status'] = row[1]
 
     def notifyParticipants(self, event_type='update') -> None:
         if not self.conversationRecord:
