@@ -1,81 +1,15 @@
 import logging
 
 import skygear
-from skygear.models import Record
+from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .conversation import Conversation
-from .exc import NotInConversationException, SkygearChatException
+from .exc import (NotInConversationException, NotSupportedException,
+                  SkygearChatException)
 from .message import Message
-from .receipt import create_delivered_receipts, create_read_receipts
-from .utils import is_str_list
-
-
-def _message_status_may_change(
-    new_receipt: Record,
-    old_receipt: Record
-) -> bool:
-    """
-    Return true if the message status of a message may change. This
-    is used to prevent status to change unnecessarily.
-    """
-    if not old_receipt:
-        return True
-
-    return new_receipt.get('read_at', None) != old_receipt.get('read_at', None)
-
-
-def handle_receipt_before_save(record, original_record, conn):
-    """
-    Check the receipt before saving.
-    """
-    message_ref = record.get('message', '')
-    if not message_ref:
-        raise SkygearChatException('missing message')
-
-    message = Message.fetch(message_ref.recordID.key)
-    conversation = Conversation(message.conversationRecord)
-    if not conversation.is_participant(current_user_id()):
-        raise NotInConversationException()
-
-    user_ref = record.get('user', None)
-    if not user_ref or user_ref.recordID.key != current_user_id():
-        raise SkygearChatException('argument exception')
-
-    if original_record:
-        # Prevent the client from modifying the delivered_at and read_at fields
-        # if a value exists.
-        if original_record.get('delivered_at', None):
-            record['delivered_at'] = original_record['delivered_at']
-        if original_record.get('read_at', None):
-            record['read_at'] = original_record['read_at']
-
-
-def handle_receipt_after_save(record, original_record, conn):
-    """
-    Handle further update or notification after saving a receipt.
-    """
-    logging.debug(
-        'handle_receipt_after_save: has original_record %s',
-        bool(original_record)
-    )
-    logging.debug(
-        'handle_receipt_after_save: record.read_at %s',
-        record.get('read_at', None)
-    )
-    if original_record:
-        logging.debug(
-            'handle_receipt_after_save: original_record.read_at %s',
-            original_record.get('read_at', None)
-        )
-
-    if _message_status_may_change(record, original_record):
-        logging.debug(
-            'updating message status because receipt read_at has changed'
-        )
-        message = Message.fetch(record['message'].recordID.key)
-        message.updateMessageStatus(conn)
-        message.notifyParticipants()
+from .receipt import Receipt, ReceiptCollection
+from .utils import current_context_has_master_key, is_str_list
 
 
 def handle_mark_as_delivered(message_ids: [str]):
@@ -87,9 +21,7 @@ def handle_mark_as_delivered(message_ids: [str]):
         'handle_mark_as_delivered: message_ids: %s',
         ','.join(message_ids)
     )
-
-    receipts = create_delivered_receipts(current_user_id(), message_ids)
-    receipts.save()
+    mark_messages(message_ids, True, False)
 
 
 def handle_mark_as_read(message_ids: [str]):
@@ -103,9 +35,74 @@ def handle_mark_as_read(message_ids: [str]):
         'handle_mark_as_read: message_ids: %s',
         ','.join(message_ids)
     )
+    mark_messages(message_ids, True, True)
 
-    receipts = create_read_receipts(current_user_id(), message_ids)
-    receipts.save()
+
+def __validate_current_user_in_messages(messages, user_id):
+    for message in messages:
+        conversation = Conversation(message.conversationRecord)
+        if not conversation.is_participant(user_id):
+            print("user %s is not a participant in conversation %s" %
+                  (user_id, conversation.recordID.key))
+            raise NotInConversationException()
+
+
+def __update_and_notify_unread_messages(messages):
+    with db.conn() as conn:
+        for message in messages:
+            message.updateMessageStatus(conn)
+            message.notifyParticipants()
+
+
+def __fetch_receipts(messages, user_id):
+    receipt_ids = [Receipt.consistent_id(user_id,
+                   message.record.id.key)
+                   for message in messages]
+
+    found_receipts = {x.record.id.key: x for x in Receipt.fetch(receipt_ids)}
+    return found_receipts
+
+
+def mark_messages(message_ids, mark_delivered, mark_read):
+    """
+    Check the receipt before saving.
+    TODO: update this checking after role based ACL
+    """
+    user_id = current_user_id()
+    messages = Message.fetch(message_ids)
+    __validate_current_user_in_messages(messages, user_id)
+    found_receipts = __fetch_receipts(messages, user_id)
+
+    new_receipts = ReceiptCollection()
+    unread_messages = []
+    for message in messages:
+        message_id = message.record.id.key
+        receipt_id = Receipt.consistent_id(user_id, message_id)
+        receipt = found_receipts.get(receipt_id, None)
+        if receipt is None:
+            receipt = Receipt(user_id, message_id)
+
+        should_mark_delivered = mark_delivered and\
+            (not receipt.is_delivered())
+        should_mark_read = mark_read and\
+            (not receipt.is_read())
+
+        if should_mark_read or should_mark_delivered:
+
+            if should_mark_delivered:
+                receipt.mark_as_delivered()
+
+            if should_mark_read:
+                receipt.mark_as_read()
+
+            print("new receipt,user_id=%s,message_id=%s" %
+                  (user_id, message_id))
+
+            new_receipts.append(receipt)
+            unread_messages.append(message)
+
+    new_receipts.save()
+    __update_and_notify_unread_messages(unread_messages)
 
 
 def handle_get_receipt(message_id):
@@ -127,11 +124,8 @@ def handle_get_receipt(message_id):
 def register_receipt_hooks(settings):
     @skygear.before_save("receipt", async=False)
     def receipt_before_save_handler(record, original_record, conn):
-        return handle_receipt_before_save(record, original_record, conn)
-
-    @skygear.after_save("receipt", async=True)
-    def receipt_after_save_handler(record, original_record, conn):
-        return handle_receipt_after_save(record, original_record, conn)
+        if not current_context_has_master_key():
+            raise NotSupportedException()
 
 
 def register_receipt_lambdas(settings):

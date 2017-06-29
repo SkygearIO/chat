@@ -109,3 +109,47 @@ def to_rfc3339_or_none(dt):
     if not dt:
         return None
     return timestamp_to_rfc3339_utcoffset(dt.timestamp())
+
+
+def get_key_from_object(obj):
+    if isinstance(obj, Reference):
+        return obj.recordID.key
+    if isinstance(obj, RecordID):
+        return obj.key
+    if isinstance(obj, str):
+        return obj
+    raise ValueError()
+
+
+def fetch_records(container, database_id, record_type, ids, convert_func):
+    """
+    Fetch records with record API
+    TODO: move to pyskygear
+    """
+    ids = list(set(ids))
+    response = container.send_action(
+            'record:query',
+            {
+                'database_id': database_id,
+                'record_type': record_type,
+                'limit': len(ids),
+                'sort': [],
+                'count': False,
+                'predicate': [
+                    'in', {
+                        '$type': 'keypath',
+                        '$val': '_id'
+                    },
+                    ids
+                ]
+            }
+        )
+
+    if 'error' in response:
+        raise SkygearChatException(response['error'])
+
+    results = []
+    for result in response['result']:
+        results.append(convert_func(result))
+
+    return results

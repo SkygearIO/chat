@@ -2,7 +2,7 @@ from psycopg2.extensions import AsIs
 
 from skygear.container import SkygearContainer
 from skygear.error import ResourceNotFound
-from skygear.models import Record, RecordID, Reference
+from skygear.models import Record
 from skygear.options import options as skyoptions
 from skygear.transmitter.encoding import deserialize_record, serialize_record
 from skygear.utils import db
@@ -10,7 +10,8 @@ from skygear.utils.context import current_user_id
 
 from .exc import AlreadyDeletedException, SkygearChatException
 from .pubsub import _publish_record_event
-from .utils import _get_conversation, _get_schema_name, to_rfc3339_or_none
+from .utils import (_get_conversation, _get_schema_name, fetch_records,
+                    get_key_from_object, to_rfc3339_or_none)
 
 
 class Message:
@@ -19,76 +20,54 @@ class Message:
         self.conversationRecord = None
 
     @classmethod
-    def fetch(cls, message_id: str):
+    def from_dict(cls, result_dict):
+        obj = cls()
+        obj.record = deserialize_record(result_dict)
+        return obj
+
+    @classmethod
+    def fetch(cls, arg: [str]):
         """
-        Fetch the message from skygear.
+        Fetch the message(s) from skygear.
 
         The conversation record is also fetched using eager load.
         """
-        # FIXME checking should not be necessary, passing correct type
-        # is the responsibility of the caller.
-        # message_id can be Reference, recordID or string
-        if isinstance(message_id, Reference):
-            message_id = message_id.recordID.key
-        if isinstance(message_id, RecordID):
-            message_id = message_id.key
-        if not isinstance(message_id, str):
-            raise ValueError()
+        if not isinstance(arg, list):
+            arg = [arg]
+        message_ids = [get_key_from_object(x) for x in arg]
 
         container = SkygearContainer(api_key=skyoptions.masterkey,
                                      user_id=current_user_id())
-        response = container.send_action(
-            'record:query',
-            {
-                'database_id': '_union',
-                'record_type': 'message',
-                'limit': 1,
-                'sort': [],
-                'count': False,
-                'predicate': [
-                    'eq', {
-                        '$type': 'keypath',
-                        '$val': '_id'
-                    },
-                    message_id
-                ]
-            }
-        )
 
-        if 'error' in response:
-            raise SkygearChatException(response['error'])
-
-        if len(response['result']) == 0:
+        messages = fetch_records(container, '_union', 'message',
+                                 message_ids, Message.from_dict)
+        if len(messages) == 0:
             raise SkygearChatException('no messages found',
                                        code=ResourceNotFound)
 
-        obj = cls()
-        messageDict = response['result'][0]
-        obj.record = deserialize_record(messageDict)
-        # Conversation is in publicDB, do cannot transient include
-        print(obj.record['conversation'].recordID.key)
-        response = container.send_action(
-            'record:query',
-            {
-                'database_id': '_public',
-                'record_type': 'conversation',
-                'limit': 1,
-                'sort': [],
-                'count': False,
-                'predicate': [
-                    'eq', {
-                        '$type': 'keypath',
-                        '$val': '_id'
-                    },
-                    obj.record['conversation'].recordID.key
-                ]
-            }
-        )
-        if len(response['result']) == 0:
-            raise SkygearChatException("no conversation found")
-        conversationDict = response['result'][0]
-        obj.conversationRecord = deserialize_record(conversationDict)
-        return obj
+        conversation_ids = [message.record['conversation'].recordID.key
+                            for message in messages]
+
+        print("conversation_ids to be queried:[%s]" %
+              ",".join(conversation_ids))
+
+        conversations = fetch_records(container, '_public',
+                                      'conversation', conversation_ids,
+                                      lambda x: deserialize_record(x))
+
+        conversations_dict = {}
+        for conversation in conversations:
+            key = conversation.id.key
+            conversations_dict[key] = conversation
+
+        for message in messages:
+            conversation_id = message.record['conversation'].recordID.key
+            if conversation_id not in conversations_dict:
+                raise SkygearChatException(
+                      "conversation %s from message %s not found." %
+                      (conversation_id, message.record.id.key))
+            message.conversationRecord = conversations_dict[conversation_id]
+        return messages
 
     @classmethod
     def from_record(cls, record):
