@@ -3,16 +3,21 @@ from psycopg2.extras import Json
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 import skygear
+from skygear.container import SkygearContainer
+from skygear.options import options as skyoptions
 from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .asset import sign_asset_url
 from .conversation import Conversation
+from .database import Database
 from .exc import (AlreadyDeletedException, MessageNotFoundException,
                   NotInConversationException, NotSupportedException)
 from .message import Message
 from .message_history import MessageHistory
+from .predicate import Predicate
+from .query import Query
 from .utils import _get_conversation, _get_schema_name
 
 
@@ -21,28 +26,15 @@ def get_messages(conversation_id, limit, before_time=None):
     if not conversation.is_participant(current_user_id()):
         raise NotInConversationException()
 
-    with db.conn() as conn:
-        cur = conn.execute('''
-            SELECT
-                _id, _created_at, _created_by,
-                body, conversation, metadata, message_status,
-                attachment
-            FROM %(schema_name)s.message
-            WHERE conversation = %(conversation_id)s
-            AND (_created_at < %(before_time)s OR %(before_time)s IS NULL)
-            AND deleted = false
-            ORDER BY _created_at DESC
-            LIMIT %(limit)s;
-            ''', {
-                'schema_name': AsIs(_get_schema_name()),
-                'conversation_id': conversation_id,
-                'before_time': before_time,
-                'limit': limit
-            }
-        )
-
-        results = cursor_to_messages(cur)
-        return {'results': results}
+    container = SkygearContainer(api_key=skyoptions.masterkey,
+                                 user_id=current_user_id())
+    database = Database(container, '_private')
+    predicate = Predicate(conversation__eq=conversation_id, deleted__eq=False)
+    if before_time is not None:
+        predicate = predicate | Predicate(_created_at__lt=before_time)
+    query = Query('message', predicate=predicate, limit=limit)
+    query.add_order('_created_at', 'desc')
+    return {'results': database.query(query)["result"]}
 
 
 def get_messages_by_ids(message_ids):
