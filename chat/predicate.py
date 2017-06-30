@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import collections
 import copy
 
 
@@ -22,7 +24,10 @@ class Predicate(object):
 
     def __init__(self, **kwargs):
         self.op = kwargs.pop('op', Predicate.AND)
-        self.conditions = [(key, kwargs[key]) for key in kwargs.keys()]
+        # Need to use ordered dict in order to pass unit test in python 3.5.
+        # See https://docs.python.org/3.6/whatsnew/3.6.html#whatsnew36-pep468
+        od = collections.OrderedDict(sorted(kwargs.items()))
+        self.conditions = [(key, kwargs[key]) for key in od.keys()]
 
     def __and__(self, other):
         new_instance = Predicate()

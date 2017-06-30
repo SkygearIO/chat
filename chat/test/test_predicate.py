@@ -30,9 +30,10 @@ class TestPredicate(unittest.TestCase):
 
     def test_simple_and_three_statements(self):
         p = Predicate(time__lte="2010-07-10", time__gte="2009-01-01", deleted__ne=False)
-        expected = ["and", ["lte", {"$type": "keypath", "$val": "time"}, "2010-07-10"],
+        expected = ["and",
+                   ["ne", {"$type": "keypath", "$val": "deleted"}, False],
                    ["gte", {"$type": "keypath", "$val": "time"}, "2009-01-01"],
-                   ["ne", {"$type": "keypath", "$val": "deleted"}, False]]
+                   ["lte", {"$type": "keypath", "$val": "time"}, "2010-07-10"]]
         self.assertListEqual(expected, p.to_dict())
 
     def test_simple_or(self):
