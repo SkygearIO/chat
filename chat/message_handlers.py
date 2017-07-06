@@ -31,7 +31,7 @@ def get_messages(conversation_id, limit, before_time=None):
     database = Database(container, '_private')
     predicate = Predicate(conversation__eq=conversation_id, deleted__eq=False)
     if before_time is not None:
-        predicate = predicate | Predicate(_created_at__lt=before_time)
+        predicate = predicate & Predicate(_created_at__lt=before_time)
     query = Query('message', predicate=predicate, limit=limit)
     query.add_order('_created_at', 'desc')
     return {'results': database.query(query)["result"]}
