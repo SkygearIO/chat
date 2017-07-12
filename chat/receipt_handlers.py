@@ -112,15 +112,15 @@ def __fetch_receipts(messages, user_id):
     return found_receipts
 
 
-def __update_user_conversations(unread_counts, last_read_messages, conn):
+def __update_user_conversations(unread_counter, last_read_messages, conn):
     """
     Update user conversation table based on un-read counts and
     last read messages
     """
     user_id = current_user_id()
     schema_name = AsIs(_get_schema_name())
-    for key in unread_counts:
-        delta = unread_counts[key]
+    for key in unread_counter:
+        delta = unread_counter[key]
         if delta == 0:
             continue
         conn.execute('''
@@ -182,6 +182,48 @@ def __update_last_read_messages(last_read_messages, message, key):
     last_read_messages[key] = last_read_message
 
 
+def __get_messages_receipts(messages, user_id):
+    output = []
+    found_receipts = __fetch_receipts(messages, user_id)
+    for message in messages:
+        message_id = message.record.id.key
+        receipt_id = Receipt.consistent_id(user_id, message_id)
+        receipt = found_receipts.get(receipt_id, None)
+        if receipt is None:
+            receipt = receipt(user_id, message_id)
+        output.append((message, receipt))
+    return output
+
+
+def __process_message_receipts(tuples, mark_delivered, mark_read):
+    new_receipts = ReceiptCollection()
+    unread_messages = []
+    unread_counter = Counter()
+    last_read_messages = {}
+    for message, receipt in tuples:
+        should_mark_delivered = mark_delivered and\
+            (not receipt.is_delivered())
+        should_mark_read = mark_read and\
+            (not receipt.is_read())
+
+        if should_mark_delivered:
+            receipt.mark_as_delivered()
+        if should_mark_read:
+            receipt.mark_as_read()
+            key = Conversation(message.conversationRecord).record.id.key
+            unread_counter[key] += 1
+            __update_last_read_messages(last_read_messages, message, key)
+
+            print("new receipt,message_id=%s" %
+                  (message.record.id.key))
+
+        if should_mark_read or should_mark_delivered:
+            new_receipts.append(receipt)
+            unread_messages.append(message)
+
+    return unread_messages, unread_counter, last_read_messages, new_receipts
+
+
 def mark_messages(message_ids, mark_delivered, mark_read):
     """
     Check the receipt before saving.
@@ -191,44 +233,19 @@ def mark_messages(message_ids, mark_delivered, mark_read):
     messages = Message.fetch(message_ids)
     __validate_current_user_in_messages(messages, user_id)
     print("number of messages=%d" % (len(messages)))
-    found_receipts = __fetch_receipts(messages, user_id)
 
-    new_receipts = ReceiptCollection()
-    unread_messages = []
-    unread_counts = Counter()
-    last_read_messages = {}
-    for message in messages:
-        message_id = message.record.id.key
-        receipt_id = Receipt.consistent_id(user_id, message_id)
-        receipt = found_receipts.get(receipt_id, None)
-        if receipt is None:
-            receipt = Receipt(user_id, message_id)
-
-        should_mark_delivered = mark_delivered and\
-            (not receipt.is_delivered())
-        should_mark_read = mark_read and\
-            (not receipt.is_read())
-
-        if should_mark_delivered:
-            receipt.mark_as_delivered()
-        if should_mark_read:
-            key = Conversation(message.conversationRecord).record.id.key
-            receipt.mark_as_read()
-            unread_counts[key] += 1
-            __update_last_read_messages(last_read_messages, message, key)
-
-            print("new receipt,user_id=%s,message_id=%s" %
-                  (user_id, message_id))
-
-        if should_mark_read or should_mark_delivered:
-            new_receipts.append(receipt)
-            unread_messages.append(message)
+    tuples = __get_messages_receipts(messages, user_id)
+    unread_messages, unread_counter, last_read_messages, new_receipts = \
+        __process_message_receipts(tuples,
+                                   user_id,
+                                   mark_delivered,
+                                   mark_read)
 
     print("number of new receipts=%d" % (len(new_receipts)))
     new_receipts.save()
 
     with db.conn() as conn:
-        __update_user_conversations(unread_counts, last_read_messages, conn)
+        __update_user_conversations(unread_counter, last_read_messages, conn)
         __update_and_notify_unread_messages(unread_messages, conn)
 
 
