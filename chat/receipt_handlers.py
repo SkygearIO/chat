@@ -110,7 +110,10 @@ def handle_get_receipt(message_id):
     Retrieve receipts for a message.
     """
     logging.info("handle_get_receipt: for message_id %s", message_id)
-    message = Message.fetch(message_id)
+    messages = Message.fetch(message_id)
+    if len(messages) == 0:
+        raise SkygearChatException('Message not found')
+    message = messages[0]
     conversation = Conversation(message.conversationRecord)
     if not conversation.is_participant(current_user_id()):
         raise NotInConversationException()

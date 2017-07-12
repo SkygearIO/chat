@@ -109,7 +109,7 @@ class Message:
         receipts = list()
         with db.conn() as conn:
             cur = conn.execute('''
-                SELECT user, read_at, delivered_at
+                SELECT receipt.user, read_at, delivered_at
                 FROM %(schema_name)s.receipt
                 WHERE
                     "message" = %(message_id)s
@@ -138,7 +138,7 @@ class Message:
         cur = conn.execute('''
             WITH
               read_count AS (
-                SELECT DISTINCT COUNT(user) as count
+                SELECT DISTINCT COUNT(receipt.user) as count
                 FROM %(schema_name)s.receipt
                 WHERE message = %(message_id)s
                     AND read_at IS NOT NULL
