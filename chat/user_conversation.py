@@ -5,57 +5,61 @@ from psycopg2.extensions import AsIs
 
 import skygear
 from skygear.container import SkygearContainer
+from skygear.models import (ACCESS_CONTROL_ENTRY_LEVEL_WRITE, Record, RecordID,
+                            Reference, RoleAccessControlEntry)
 from skygear.options import options as skyoptions
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
+from .conversation import get_admin_role, get_participant_role
+from .database import Database
+from .predicate import Predicate
+from .query import Query
 from .utils import _get_schema_name
 
 
-class UserConversation():
-    def __init__(self, conversation, participant_id, master_key=None):
-        if master_key is None:
-            master_key = skyoptions.masterkey
+class UserConversation(Record):
+    def __init__(self, conversation, user):
+        super(self.__class__, self).\
+            __init__(None, user, [RoleAccessControlEntry(
+                                 get_admin_role(conversation),
+                                 ACCESS_CONTROL_ENTRY_LEVEL_WRITE),
+                                 RoleAccessControlEntry(
+                                 get_participant_role(conversation),
+                                 ACCESS_CONTROL_ENTRY_LEVEL_WRITE)])
+        self['user'] = Reference(RecordID('user', user))
+        self['conversation'] = Reference(RecordID('conversation',
+                                                  conversation))
+        self['unread_count'] = 0
+        self['is_admin'] = False
 
-        self.conversation = conversation
-        self.participant_id = participant_id
-        self.master_key = master_key
-
-    def get_conversation_ref(self):
-        return {
-            '$type': 'ref',
-            '$id': 'conversation/' + self.conversation.record.id._key
-        }
-
-    def get_consistent_hash(self):
-        seed = self.conversation.record.id._key + self.participant_id
+    @staticmethod
+    def get_consistent_hash(conversation_id, user_id):
+        seed = conversation_id + user_id
         sha = hashlib.sha256(bytes(seed, 'utf8'))
-        return uuid.UUID(bytes=sha.digest()[0:16])
+        return str(uuid.UUID(bytes=sha.digest()[0:16]))
 
-    def create(self):
-        container = SkygearContainer(api_key=self.master_key,
-                                     user_id=self.participant_id)
-        container.send_action('record:save', {
-            'database_id': '_public',
-            'records': [{
-                '_id': 'user_conversation/' + str(self.get_consistent_hash()),
-                '_access': [],
-                'user': {
-                    '$type': 'ref',
-                    '$id': 'user/' + self.participant_id
-                },
-                'conversation': self.get_conversation_ref(),
-                'unread_count': 0
-            }]
-        })
+    @property
+    def id(self):
+        hash_key = UserConversation.\
+                   get_consistent_hash(self['conversation'].recordID.key,
+                                       self['user'].recordID.key)
+        return RecordID('user_conversation', hash_key)
 
-    def delete(self):
-        container = SkygearContainer(api_key=self.master_key,
-                                     user_id=self.participant_id)
-        container.send_action('record:delete', {
-            'database_id': '_public',
-            'ids': ['user_conversation/' + str(self.get_consistent_hash())]
-        })
+
+def is_user_id_in_conversation(user_id, conversation_id, check_is_admin=False):
+    container = SkygearContainer(api_key=skyoptions.masterkey,
+                                 user_id=user_id)
+    database = Database(container, '_public')
+    query = Query('user_conversation',
+                  predicate=Predicate(
+                            conversation__eq=conversation_id,
+                            user__eq=user_id),
+                  limit=1)
+    result = database.query(query)
+    print("is_user_id_in_conversation", result)
+    return len(result["result"]) == 1 and\
+              (not check_is_admin or result["result"][0]['is_admin'])
 
 
 def total_unread(user_id=None):

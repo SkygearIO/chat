@@ -18,7 +18,7 @@ from .predicate import Predicate
 class Query:
     def __init__(self, record_type,
                  predicate=None, count=False,
-                 limit=50, offset=None, include={}):
+                 limit=50, offset=None, include=[]):
         self.record_type = record_type
         if predicate is None:
             predicate = Predicate()

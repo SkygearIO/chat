@@ -4,14 +4,45 @@ from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 from skygear.container import SkygearContainer
 from skygear.models import RecordID, Reference
 from skygear.options import options as skyoptions
+from skygear.transmitter.encoding import deserialize_record
 from skygear.utils import db
-from skygear.utils.context import current_context
+from skygear.utils.context import current_context, current_user_id
 
+from .database import Database
 from .exc import SkygearChatException
+from .predicate import Predicate
+from .query import Query
+
+
+def _get_container():
+    return SkygearContainer(api_key=skyoptions.masterkey,
+                            user_id=current_user_id())
 
 
 def _get_schema_name():
     return "app_%s" % skyoptions.appname
+
+
+def get_participants_and_admins(conversation_ids):
+    container = _get_container()
+    database = Database(container, '_public')
+    predicate = Predicate(conversation__in=list(set(conversation_ids)))
+    query_result = database.query(
+                   Query('user_conversation', predicate=predicate)
+                   )["result"]
+    admins = {}
+    participants = {}
+    for row in query_result:
+        r = deserialize_record(row)
+        conversation = r['conversation'].recordID.key
+        if conversation not in participants:
+            participants[conversation] = []
+            admins[conversation] = []
+        if r['is_admin']:
+            admins[conversation].append(r['user'].recordID.key)
+        participants[conversation].append(r['user'].recordID.key)
+
+    return participants, admins
 
 
 def _get_conversation(conversation_id):
@@ -47,7 +78,11 @@ def _get_conversation(conversation_id):
     if len(response['result']) == 0:
         raise SkygearChatException("no conversation found")
 
-    return response['result'][0]
+    conversation = response['result'][0]
+    participants, admins = get_participants_and_admins([conversation_id])
+    conversation['participant_ids'] = participants[conversation_id]
+    conversation['admin_ids'] = admins[conversation_id]
+    return conversation
 
 
 def _get_channel_by_user_id(user_id):

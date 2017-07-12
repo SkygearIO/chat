@@ -8,10 +8,13 @@ from skygear.transmitter.encoding import deserialize_record, serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
+from .database import Database
 from .exc import AlreadyDeletedException, SkygearChatException
+from .predicate import Predicate
 from .pubsub import _publish_record_event
-from .utils import (_get_conversation, _get_schema_name, fetch_records,
-                    get_key_from_object, to_rfc3339_or_none)
+from .query import Query
+from .utils import (_get_container, _get_conversation, _get_schema_name,
+                    fetch_records, get_key_from_object, to_rfc3339_or_none)
 
 
 class Message:
@@ -45,7 +48,7 @@ class Message:
             raise SkygearChatException('no messages found',
                                        code=ResourceNotFound)
 
-        conversation_ids = [message.record['conversation'].recordID.key
+        conversation_ids = [message.conversation_id
                             for message in messages]
 
         print("conversation_ids to be queried:[%s]" %
@@ -61,7 +64,7 @@ class Message:
             conversations_dict[key] = conversation
 
         for message in messages:
-            conversation_id = message.record['conversation'].recordID.key
+            conversation_id = message.conversation_id
             if conversation_id not in conversations_dict:
                 raise SkygearChatException(
                       "conversation %s from message %s not found." %
@@ -98,8 +101,7 @@ class Message:
         is created using a Record rather than fetching the Record
         from the database.
         """
-        conversation_id = self.record['conversation'].recordID.key
-        self.conversationRecord = _get_conversation(conversation_id)
+        self.conversationRecord = _get_conversation(self.conversation_id)
         return self.conversationRecord
 
     def getReceiptList(self):
@@ -173,12 +175,13 @@ class Message:
             self.record['message_status'] = row[1]
 
     def notifyParticipants(self, event_type='update') -> None:
-        if not self.conversationRecord:
-            fetched = self.fetchConversationRecord()
-            if fetched is None:
-                raise SkygearChatException('no conversation record',
-                                           code=ResourceNotFound)
-        participants = set(self.conversationRecord['participant_ids'])
+        container = _get_container()
+        database = Database(container, '_public')
+        predicate = Predicate(conversation__eq=self.conversation_id)
+        participants = [deserialize_record(r).id.key for r in
+                        database.query(Query('user_conversation',
+                                             predicate=predicate))
+                        ["result"]]
         for each_participant in participants:
             _publish_record_event(each_participant,
                                   "message",
@@ -196,3 +199,7 @@ class Message:
             'records': [serialize_record(self.record)],
             'atomic': True
         })
+
+    @property
+    def conversation_id(self):
+        return self.record['conversation'].recordID.key

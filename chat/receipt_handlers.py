@@ -18,6 +18,7 @@ from .message import Message
 from .predicate import Predicate
 from .query import Query
 from .receipt import Receipt, ReceiptCollection
+from .user_conversation import is_user_id_in_conversation
 from .utils import (_get_schema_name, current_context_has_master_key,
                     is_str_list)
 
@@ -85,10 +86,7 @@ def handle_mark_as_read_by_range(from_message_id, to_message_id):
 
 def __validate_current_user_in_messages(messages, user_id):
     for message in messages:
-        conversation = Conversation(message.conversationRecord)
-        if not conversation.is_participant(user_id):
-            print("user %s is not a participant in conversation %s" %
-                  (user_id, conversation.record.id.key))
+        if is_user_id_in_conversation(user_id, message.conversation_id):
             raise NotInConversationException()
 
 
@@ -251,14 +249,11 @@ def handle_get_receipt(message_id):
     messages = Message.fetch(message_id)
     if len(messages) == 0:
         raise SkygearChatException('Message not found')
-    message = messages[0]
-    conversation = Conversation(message.conversationRecord)
-    if not conversation.is_participant(current_user_id()):
+    message = Message.fetch(message_id)[0]
+    if not is_user_id_in_conversation(current_user_id(),
+                                      message.conversation_id):
         raise NotInConversationException()
 
-    logging.debug(
-        "handle_get_receipt: current user is conversation participant"
-    )
     return {'receipts': message.getReceiptList()}
 
 

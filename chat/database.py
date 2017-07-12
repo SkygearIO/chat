@@ -13,36 +13,52 @@
 # limitations under the License.
 
 
+from skygear.models import Record
+from skygear.transmitter.encoding import serialize_record
+
+
 class Database(object):
     def __init__(self, container, database_id):
         self.container = container
         self.database_id = database_id
 
-    def save(self, records):
-        if not isinstance(records, list):
-            records = [records]
-
+    def save(self, arg):
+        if not isinstance(arg, list):
+            arg = [arg]
+        records = [serialize_record(item)
+                   if isinstance(item, Record) else item
+                   for item in arg]
         return self.container.send_action('record:save', {
             'database_id': self.database_id,
             'records': records
         })
 
-    def delete(self, records):
-        if not isinstance(records, list):
-            records = [records]
+    @staticmethod
+    def _encode_id(record_id):
+        return record_id.type + "/" + record_id.key
 
+    def delete(self, arg):
+        if not isinstance(arg, list):
+            arg = [arg]
+        ids = [Database._encode_id(item.id)
+               if isinstance(item, Record)
+               else item
+               for item in arg]
         return self.container.send_action('record:delete', {
             'database_id': self.database_id,
-            'records': records
+            'ids': ids
         })
 
     def query(self, query):
+        include = {v: {"$type": "keypath", "$val": v}
+                   for v in list(set(query.include))}
+
         payload = {'database_id': self.database_id,
                    'record_type': query.record_type,
                    'predicate': query.predicate.to_dict(),
                    'count': query.count,
                    'sort': query.sort,
-                   'include': query.include}
+                   'include': include}
 
         if query.offset is not None:
             payload['offset'] = query.offset

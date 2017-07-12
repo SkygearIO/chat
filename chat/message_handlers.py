@@ -1,16 +1,11 @@
 from psycopg2.extensions import AsIs
-from psycopg2.extras import Json
-from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 import skygear
-from skygear.container import SkygearContainer
-from skygear.options import options as skyoptions
 from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
-from .asset import sign_asset_url
-from .conversation import Conversation
+from .conversation import Conversation, get_message_acl
 from .database import Database
 from .exc import (AlreadyDeletedException, MessageNotFoundException,
                   NotInConversationException, NotSupportedException)
@@ -18,17 +13,14 @@ from .message import Message
 from .message_history import MessageHistory
 from .predicate import Predicate
 from .query import Query
-from .utils import _get_conversation, _get_schema_name
+from .user_conversation import is_user_id_in_conversation
+from .utils import _get_container, _get_schema_name
 
 
 def get_messages(conversation_id, limit, before_time=None):
-    conversation = Conversation(_get_conversation(conversation_id))
-    if not conversation.is_participant(current_user_id()):
+    if not is_user_id_in_conversation(current_user_id(), conversation_id):
         raise NotInConversationException()
-
-    container = SkygearContainer(api_key=skyoptions.masterkey,
-                                 user_id=current_user_id())
-    database = Database(container, '_private')
+    database = Database(_get_container(), '_public')
     predicate = Predicate(conversation__eq=conversation_id, deleted__eq=False)
     if before_time is not None:
         predicate = predicate & Predicate(_created_at__lt=before_time)
@@ -37,74 +29,15 @@ def get_messages(conversation_id, limit, before_time=None):
     return {'results': database.query(query)["result"]}
 
 
-def get_messages_by_ids(message_ids):
-    '''
-    Return the array of message with gived ids.
-
-    - ACL check will rely on the `participant_ids` of referenced conversation.
-    - For id does not have corresponding message, no error will be reported.
-    - For message that user have no access to, no error will be reported.
-    '''
-    with db.conn() as conn:
-        cur = conn.execute('''
-            SELECT
-                m._id, m._created_at, m._created_by,
-                m.body, m.conversation,
-                m.metadata, m.message_status,
-                m.attachment
-            FROM %(schema_name)s.message AS m
-            LEFT JOIN %(schema_name)s.conversation
-            ON m.conversation=conversation._id
-            WHERE m._id = ANY(%(ids)s)
-            AND conversation.participant_ids @> %(user_id)s
-            ''', {
-                'schema_name': AsIs(_get_schema_name()),
-                'ids': message_ids,
-                'user_id': Json(current_user_id())
-            }
-        )
-
-        results = cursor_to_messages(cur)
-        return {
-            'results': results
-        }
-
-
-def cursor_to_messages(cur):
-    results = []
-    for row in cur:
-        created_stamp = row[1].timestamp()
-        dt = timestamp_to_rfc3339_utcoffset(created_stamp)
-        r = {
-            '_id': 'message/' + row[0],
-            '_created_at': dt,
-            '_created_by': row[2],
-            'body': row[3],
-            'conversation': {
-                '$id': 'conversation/' + row[4],
-                '$type': 'ref'
-            },
-            'metadata': row[5],
-            'message_status': row[6],
-        }
-        if row[7]:
-            r['attachment'] = {
-                '$type': 'asset',
-                '$name': row[7],
-                '$url': sign_asset_url(row[7])
-            }
-        results.append(r)
-    return results
-
-
 def handle_message_before_save(record, original_record, conn):
     message = Message.from_record(record)
-    conversation = Conversation(message.fetchConversationRecord())
-    if not conversation.is_participant(current_user_id()):
-        raise NotInConversationException()
 
     if original_record is not None and original_record['deleted']:
         raise AlreadyDeletedException()
+
+    if not is_user_id_in_conversation(current_user_id(),
+                                      message.conversation_id):
+        raise NotInConversationException()
 
     if original_record is None:
         message.record['deleted'] = False
@@ -115,7 +48,7 @@ def handle_message_before_save(record, original_record, conn):
 
     if message.record.get('message_status', None) is None:
         message.record['message_status'] = 'delivered'
-
+    message.record.acl = get_message_acl(message.conversation_id)
     return message.record
 
 
@@ -240,11 +173,6 @@ def register_message_lambdas(settings):
     @skygear.op("chat:get_messages", auth_required=True, user_required=True)
     def get_messages_lambda(conversation_id, limit, before_time=None):
         return get_messages(conversation_id, limit, before_time)
-
-    @skygear.op("chat:get_messages_by_ids", auth_required=True,
-                user_required=True)
-    def get_messages_by_ids_lambda(message_ids):
-        return get_messages_by_ids(message_ids)
 
     @skygear.op("chat:delete_message", auth_required=True, user_required=True)
     def delete_message_lambda(message_id):
