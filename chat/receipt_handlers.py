@@ -48,12 +48,7 @@ def handle_mark_as_read(message_ids: [str]):
     mark_messages(message_ids, True, True)
 
 
-def handle_mark_as_read_by_range(arg):
-    from_message_id = None
-    to_message_id = None
-    to_message_id = arg[-1]
-    from_message_id = arg[0]
-
+def handle_mark_as_read_by_range(from_message_id, to_message_id):
     from_seq = -1
     to_seq = -1
     message_ids = [to_message_id]
@@ -237,7 +232,6 @@ def mark_messages(message_ids, mark_delivered, mark_read):
     tuples = __get_messages_receipts(messages, user_id)
     unread_messages, unread_counter, last_read_messages, new_receipts = \
         __process_message_receipts(tuples,
-                                   user_id,
                                    mark_delivered,
                                    mark_read)
 
@@ -297,10 +291,8 @@ def register_receipt_lambdas(settings):
     def get_receipt_lambda(message_id):
         return handle_get_receipt(message_id)
 
-    @skygear.op("chat:mark_as_last_read",
+    @skygear.op("chat:mark_as_read_by_range",
                 auth_required=True,
                 user_required=True)
-    def mark_as_last_read_lambda(arg):
-        if isinstance(arg, list) and is_str_list(arg):
-            return handle_mark_as_read_by_range(arg)
-        raise SkygearChatException('bad request')
+    def mark_as_read_by_range_lambda(from_message_id, to_message_id):
+        return handle_mark_as_read_by_range(from_message_id, to_message_id)
