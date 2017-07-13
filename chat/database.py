@@ -40,12 +40,13 @@ class Database(object):
         payload = {'database_id': self.database_id,
                    'record_type': query.record_type,
                    'predicate': query.predicate.to_dict(),
-                   'limit': query.limit,
                    'count': query.count,
                    'sort': query.sort,
                    'include': query.include}
 
         if query.offset is not None:
             payload['offset'] = query.offset
+        if query.limit is not None:
+            payload['limit'] = query.limit
 
         return self.container.send_action('record:query', payload)

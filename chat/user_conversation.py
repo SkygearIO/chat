@@ -82,44 +82,7 @@ def total_unread(user_id=None):
     }
 
 
-def populate_unread_count(record, orig, conn):
-    if orig is None:
-        return
-    if record.get('last_read_message') == orig.get('last_read_message'):
-        return
-
-    conversation = record.get('conversation')
-    last_read_message = record.get('last_read_message')
-    if last_read_message is None:
-        return
-
-    cur = conn.execute('''
-        SELECT COUNT(*)
-        FROM %(schema_name)s.message
-        WHERE
-            "conversation_id" = %(conversation_id)s AND
-            "_created_at" > (
-                SELECT "_created_at" FROM %(schema_name)s.message
-                WHERE "_id" = %(last_read_message)s
-            )
-        ''', {
-            'schema_name': AsIs(_get_schema_name()),
-            'conversation_id': conversation.recordID.key,
-            'last_read_message': last_read_message.recordID.key,
-        }
-    )
-    r = cur.first()
-    record['unread_count'] = r[0]
-    return record
-
-
 def register_user_conversation_lambdas(settings):
     @skygear.op("chat:total_unread", auth_required=True, user_required=True)
     def total_unread_lambda():
         return total_unread()
-
-
-def register_user_conversation_hooks(settings):
-    @skygear.before_save("user_conversation", async=False)
-    def user_conversation_before_save_handler(record, orig, conn):
-        return populate_unread_count(record, orig, conn)
