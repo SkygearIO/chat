@@ -185,7 +185,7 @@ def __get_messages_receipts(messages, user_id):
         receipt_id = Receipt.consistent_id(user_id, message_id)
         receipt = found_receipts.get(receipt_id, None)
         if receipt is None:
-            receipt = receipt(user_id, message_id)
+            receipt = Receipt(user_id, message_id)
         output.append((message, receipt))
     return output
 
