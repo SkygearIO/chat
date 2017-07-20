@@ -248,9 +248,14 @@ def handle_get_conversation_lambda(conversation_id, include_last_message):
         conversation = __uc_to_conversation(query_result[0])
 
     if conversation is not None and include_last_message:
+        participants, admins = get_participants_and_admins([conversation_id])
         message_ids = __get_messsage_ids_from_conversation(conversation)
         messages = __get_messages_by_ids(database, message_ids)
         conversation = __update_conversation_messages(conversation, messages)
+        get_participants_and_admins
+        conversation['admin_ids'] = admins[conversation_id]
+        conversation['participant_ids'] = participants[conversation_id]
+
     return {'conversation': conversation}
 
 
