@@ -48,7 +48,7 @@ def handle_message_before_save(record, original_record, conn):
 
     if message.record.get('message_status', None) is None:
         message.record['message_status'] = 'delivered'
-    #TODO use proper ACL setter
+    # TODO use proper ACL setter
     message.record._acl = get_message_acl(message.conversation_id)
     return message.record
 
