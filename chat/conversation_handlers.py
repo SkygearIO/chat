@@ -116,7 +116,7 @@ def handle_conversation_before_delete(record, conn):
 
 def handle_leave_conversation(conversation_id):
     if not is_user_id_in_conversation(current_user_id(),
-                                      is_user_id_in_conversation):
+                                      conversation_id):
         raise NotInConversationException()
     uc = UserConversation(conversation_id, current_user_id())
     uc.delete()
@@ -129,6 +129,10 @@ def handle_add_participants(conversation_id,
 
     r = _get_conversation(conversation_id)
     container = _get_container()
+    for participant in participants:
+        if is_user_id_in_conversation(participant,
+                                      conversation_id):
+            raise SkygearChatException("Already added")
 
     __update_participant_roles(container, conversation_id, participants, True)
     database = Database(container, '_public')
