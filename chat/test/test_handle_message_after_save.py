@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 from skygear.transmitter.encoding import deserialize_record
 
+from ..message import Message
 from ..exc import SkygearChatException
 from ..message_handlers import handle_message_after_save
 
@@ -12,9 +13,7 @@ class TestHandleMessageAfterSave(unittest.TestCase):
     def setUp(self):
         self.conn = None
         self.patchers = [
-            patch('chat.conversation.skyoptions',
-                  Mock(return_value={'masterkey': 'secret'})),
-            patch('chat.user_conversation.skyoptions',
+            patch('chat.utils.skyoptions',
                   Mock(return_value={'masterkey': 'secret'})),
         ]
         for each_patcher in self.patchers:
@@ -48,6 +47,7 @@ class TestHandleMessageAfterSave(unittest.TestCase):
             'body': 'hihi'
         })
 
+    @patch.object(Message, 'get_participants', Mock(return_value=['user1', 'user2']))
     @patch('chat.message._publish_record_event')
     @patch('chat.message_handlers._get_schema_name', Mock(return_value='app_dev'))
     @patch('chat.message._get_conversation', Mock(return_value={

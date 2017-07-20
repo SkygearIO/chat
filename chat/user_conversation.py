@@ -4,10 +4,8 @@ import uuid
 from psycopg2.extensions import AsIs
 
 import skygear
-from skygear.container import SkygearContainer
 from skygear.models import (ACCESS_CONTROL_ENTRY_LEVEL_WRITE, Record, RecordID,
                             Reference, RoleAccessControlEntry)
-from skygear.options import options as skyoptions
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
@@ -15,7 +13,7 @@ from .conversation import get_admin_role, get_participant_role
 from .database import Database
 from .predicate import Predicate
 from .query import Query
-from .utils import _get_schema_name
+from .utils import _get_container, _get_schema_name
 
 
 class UserConversation(Record):
@@ -33,6 +31,11 @@ class UserConversation(Record):
         self['unread_count'] = 0
         self['is_admin'] = False
 
+    def get_hash(self):
+        return UserConversation.\
+               get_consistent_hash(self['conversation'].recordID.key,
+                                   self['user'].recordID.key)
+
     @staticmethod
     def get_consistent_hash(conversation_id, user_id):
         seed = conversation_id + user_id
@@ -41,15 +44,11 @@ class UserConversation(Record):
 
     @property
     def id(self):
-        hash_key = UserConversation.\
-                   get_consistent_hash(self['conversation'].recordID.key,
-                                       self['user'].recordID.key)
-        return RecordID('user_conversation', hash_key)
+        return RecordID('user_conversation', self.get_hash())
 
 
 def is_user_id_in_conversation(user_id, conversation_id, check_is_admin=False):
-    container = SkygearContainer(api_key=skyoptions.masterkey,
-                                 user_id=user_id)
+    container = _get_container()
     database = Database(container, '_public')
     query = Query('user_conversation',
                   predicate=Predicate(

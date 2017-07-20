@@ -30,5 +30,6 @@ class User(object):
         decoder = _RecordDecoder()
         name = record['name']
         id_ = decoder.decode_id(record['_id'])
-        roles = [decoder.decode_ace(a) for a in record['_access']]
+        roles = [decoder.decode_ace(a) for a in record['_access']]\
+            if record['_access'] is not None else []
         return User(name, id_, roles)

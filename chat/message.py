@@ -174,7 +174,7 @@ class Message:
             self.record['_updated_at'] = row[0]
             self.record['message_status'] = row[1]
 
-    def notifyParticipants(self, event_type='update') -> None:
+    def get_participants(self):
         container = _get_container()
         database = Database(container, '_public')
         predicate = Predicate(conversation__eq=self.conversation_id)
@@ -182,6 +182,10 @@ class Message:
                         database.query(Query('user_conversation',
                                              predicate=predicate))
                         ["result"]]
+        return participants
+
+    def notifyParticipants(self, event_type='update') -> None:
+        participants = self.get_participants()
         for each_participant in participants:
             _publish_record_event(each_participant,
                                   "message",
