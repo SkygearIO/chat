@@ -195,8 +195,10 @@ def register_conversation_hooks(settings):
         if original_record is None:
             check_if_context_has_master_key(
                     "Call chat:create_conversation instead")
-        record['admin_ids'] = None
-        record['participant_ids'] = None
+        if 'admin_ids' in record:
+            del record['admin_ids']
+        if 'participant_ids' in record:
+            del record['participant_ids']
 
     @skygear.before_delete("conversation", async=False)
     def conversation_before_delete_handler(record, conn):

@@ -66,8 +66,9 @@ class Conversation(ChatRecord):
         result = None
         if with_uc:
             uc = UserConversation.fetch_one(conversation_id)
-            result = cls.__uc_to_conversation(uc)
-        else:
+            if uc:
+                result = cls.__uc_to_conversation(uc)
+        if result is None:
             result = super(Conversation, cls).fetch_one(conversation_id)
 
         if result is None:
