@@ -28,7 +28,7 @@ class User(object):
     @staticmethod
     def deserialize(record):
         decoder = _RecordDecoder()
-        name = record['name']
+        name = record.get('name', None)
         id_ = decoder.decode_id(record['_id'])
         roles = [decoder.decode_ace(a) for a in record['_access']]\
             if record['_access'] is not None else []
