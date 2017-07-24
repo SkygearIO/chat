@@ -27,6 +27,14 @@ def register_initialization_event_handlers(settings):
     def chat_plugin_init(config):
         container = SkygearContainer(api_key=skyoptions.masterkey)
         schema_helper = SchemaHelper(container)
+        # We need this to provision the record type. Otherwise, make the follow
+        # up `ref` type will fails.
+        schema_helper.create([
+            Schema('user', []),
+            Schema('message', []),
+            Schema('conversation', [])
+        ], plugin_request=True)
+
         conversation_schema = Schema('conversation',
                                      [Field('title', 'string'),
                                       Field('metadata', 'json'),
@@ -56,5 +64,6 @@ def register_initialization_event_handlers(settings):
                               conversation_schema,
                               message_schema,
                               message_history_schema,
-                              receipt_schema],
+                              receipt_schema
+                             ],
                              plugin_request=True)

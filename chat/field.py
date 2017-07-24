@@ -20,4 +20,4 @@ class Field(object):
 
     def to_dict(self):
         return {'name': self.name,
-                'field_type': self.field_type}
+                'type': self.field_type}
