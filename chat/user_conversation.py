@@ -4,61 +4,95 @@ import uuid
 from psycopg2.extensions import AsIs
 
 import skygear
-from skygear.models import (ACCESS_CONTROL_ENTRY_LEVEL_WRITE, Record, RecordID,
-                            Reference, RoleAccessControlEntry)
+from skygear.models import Record, RecordID, Reference
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
-from .conversation import get_admin_role, get_participant_role
-from .database import Database
 from .predicate import Predicate
 from .query import Query
-from .utils import _get_container, _get_schema_name
+from .record import ChatRecord
+from .utils import _get_schema_name
 
 
-class UserConversation(Record):
-    def __init__(self, conversation, user):
-        super(self.__class__, self).\
-            __init__(None, user, [RoleAccessControlEntry(
-                                 get_admin_role(conversation),
-                                 ACCESS_CONTROL_ENTRY_LEVEL_WRITE),
-                                 RoleAccessControlEntry(
-                                 get_participant_role(conversation),
-                                 ACCESS_CONTROL_ENTRY_LEVEL_WRITE)])
-        self['user'] = Reference(RecordID('user', user))
-        self['conversation'] = Reference(RecordID('conversation',
-                                                  conversation))
-        self['unread_count'] = 0
-        self['is_admin'] = False
+class UserConversation(ChatRecord):
+    record_type = 'user_conversation'
+
+    @classmethod
+    def new(cls, conversation, user_id):
+        record = cls(None,
+                     user_id,
+                     conversation.get_user_conversation_acl())
+        record['user'] = Reference(RecordID('user', user_id))
+        record['conversation'] = Reference(conversation.id)
+        record['unread_count'] = 0
+        record['is_admin'] = False
+        return record
 
     def get_hash(self):
         return UserConversation.\
                get_consistent_hash(self['conversation'].recordID.key,
                                    self['user'].recordID.key)
 
-    @staticmethod
-    def get_consistent_hash(conversation_id, user_id):
+    def mark_admin(self, flag):
+        database = self._get_database()
+        record = Record(self.id, self.owner_id, self.acl)
+        record['is_admin'] = flag
+        record['user'] = self['user']
+        record['conversation'] = self['conversation']
+        database.save([record])
+
+    @classmethod
+    def get_consistent_hash(cls, conversation_id, user_id):
         seed = conversation_id + user_id
         sha = hashlib.sha256(bytes(seed, 'utf8'))
         return str(uuid.UUID(bytes=sha.digest()[0:16]))
 
     @property
     def id(self):
-        return RecordID('user_conversation', self.get_hash())
+        return RecordID(self.record_type, self.get_hash())
 
+    @classmethod
+    def exists(cls, record, check_is_admin=False):
+        record = cls.fetch_one(record.id.key)
+        return (record is not None) and\
+               (not check_is_admin or record['is_admin'])
 
-def is_user_id_in_conversation(user_id, conversation_id, check_is_admin=False):
-    container = _get_container()
-    database = Database(container, '_public')
-    query = Query('user_conversation',
-                  predicate=Predicate(
-                            conversation__eq=conversation_id,
-                            user__eq=user_id),
-                  limit=1)
-    result = database.query(query)
-    print("is_user_id_in_conversation", result)
-    return len(result["result"]) == 1 and\
-              (not check_is_admin or result["result"][0]['is_admin'])
+    @classmethod
+    def fetch_all_with_paging(cls, page, page_size):
+        database = cls._get_database()
+        offset = (page - 1) * page_size
+        query_result = database.query(
+                       Query(cls.record_type,
+                             predicate=Predicate(user__eq=current_user_id()),
+                             offset=offset,
+                             limit=page_size,
+                             include=["conversation", "user"]))
+        return [uc for uc in query_result]
+
+    @classmethod
+    def fetch_all_by_conversation_id(cls, conversation_id):
+        database = cls._get_database()
+        predicate = Predicate(conversation__eq=conversation_id)
+        return database.query(Query(cls.record_type,
+                                    predicate=predicate,
+                                    include=["conversation", "user"]))
+
+    @classmethod
+    def fetch_one(cls,
+                  conversation_id,
+                  user_id=None):
+        database = cls._get_database()
+        if user_id is None:
+            user_id = current_user_id()
+        predicate = Predicate(user__eq=user_id,
+                              conversation__eq=conversation_id)
+        query_result = database.query(
+                       Query(cls.record_type,
+                             predicate=predicate,
+                             limit=1,
+                             include=["conversation", "user"]))
+        return UserConversation.from_record(query_result[0])\
+            if len(query_result) == 1 else None
 
 
 def total_unread(user_id=None):

@@ -1,86 +1,18 @@
 from psycopg2.extensions import AsIs
 
-from skygear.container import SkygearContainer
-from skygear.error import ResourceNotFound
-from skygear.models import Record
-from skygear.options import options as skyoptions
-from skygear.transmitter.encoding import deserialize_record, serialize_record
 from skygear.utils import db
-from skygear.utils.context import current_user_id
 
-from .database import Database
-from .exc import AlreadyDeletedException, SkygearChatException
+from .exc import AlreadyDeletedException
 from .predicate import Predicate
 from .pubsub import _publish_record_event
 from .query import Query
-from .utils import (_get_container, _get_conversation, _get_schema_name,
-                    fetch_records, get_key_from_object, to_rfc3339_or_none)
+from .record import ChatRecord
+from .user_conversation import UserConversation
+from .utils import _get_schema_name, to_rfc3339_or_none
 
 
-class Message:
-    def __init__(self):
-        self.record = None
-        self.conversationRecord = None
-
-    @classmethod
-    def from_dict(cls, result_dict):
-        obj = cls()
-        obj.record = deserialize_record(result_dict)
-        return obj
-
-    @classmethod
-    def fetch(cls, arg: [str]):
-        """
-        Fetch the message(s) from skygear.
-
-        The conversation record is also fetched using eager load.
-        """
-        if not isinstance(arg, list):
-            arg = [arg]
-        message_ids = [get_key_from_object(x) for x in arg]
-
-        container = SkygearContainer(api_key=skyoptions.masterkey,
-                                     user_id=current_user_id())
-
-        messages = fetch_records(container, '_union', 'message',
-                                 message_ids, Message.from_dict)
-        if len(messages) == 0:
-            raise SkygearChatException('no messages found',
-                                       code=ResourceNotFound)
-
-        conversation_ids = [message.conversation_id
-                            for message in messages]
-
-        print("conversation_ids to be queried:[%s]" %
-              ",".join(conversation_ids))
-
-        conversations = fetch_records(container, '_public',
-                                      'conversation', conversation_ids,
-                                      lambda x: deserialize_record(x))
-
-        conversations_dict = {}
-        for conversation in conversations:
-            key = conversation.id.key
-            conversations_dict[key] = conversation
-
-        for message in messages:
-            conversation_id = message.conversation_id
-            if conversation_id not in conversations_dict:
-                raise SkygearChatException(
-                      "conversation %s from message %s not found." %
-                      (conversation_id, message.record.id.key))
-            message.conversationRecord = conversations_dict[conversation_id]
-        return messages
-
-    @classmethod
-    def from_record(cls, record):
-        """
-        Create a message from a record. This function do not make
-        external calls.
-        """
-        obj = cls()
-        obj.record = record
-        return obj
+class Message(ChatRecord):
+    record_type = 'message'
 
     def delete(self) -> None:
         """
@@ -89,20 +21,11 @@ class Message:
         - Update last_message and last_read_message
         """
 
-        if self.record['deleted']:
+        if self['deleted']:
             raise AlreadyDeletedException()
 
-        self.record['deleted'] = True
+        self['deleted'] = True
         self.save()
-
-    def fetchConversationRecord(self) -> Record:
-        """
-        Fetch conversation record. This is required if the Message
-        is created using a Record rather than fetching the Record
-        from the database.
-        """
-        self.conversationRecord = _get_conversation(self.conversation_id)
-        return self.conversationRecord
 
     def getReceiptList(self):
         """
@@ -117,7 +40,7 @@ class Message:
                     "message" = %(message_id)s
                 ''', {
                     'schema_name': AsIs(_get_schema_name()),
-                    'message_id': self.record.id.key
+                    'message_id': self.id.key
                 }
             )
 
@@ -134,9 +57,6 @@ class Message:
         Update the message status field by querying the database for
         all receipt statuses.
         """
-        if not self.conversationRecord:
-            raise Exception('no conversation record')
-
         cur = conn.execute('''
             WITH
               read_count AS (
@@ -164,46 +84,52 @@ class Message:
             RETURNING _updated_at, message_status
             ''', {
                 'schema_name': AsIs(_get_schema_name()),
-                'message_id': self.record.id.key,
-                'conversation_id': self.conversationRecord.id.key
+                'message_id': self.id.key,
+                'conversation_id': self.conversation_id
             }
         )
 
         row = cur.fetchone()
         if row is not None:
-            self.record['_updated_at'] = row[0]
-            self.record['message_status'] = row[1]
-
-    def get_participants(self):
-        container = _get_container()
-        database = Database(container, '_public')
-        predicate = Predicate(conversation__eq=self.conversation_id)
-        participants = [deserialize_record(r).id.key for r in
-                        database.query(Query('user_conversation',
-                                             predicate=predicate))
-                        ["result"]]
-        return participants
+            self['_updated_at'] = row[0]
+            self['message_status'] = row[1]
 
     def notifyParticipants(self, event_type='update') -> None:
-        participants = self.get_participants()
+        result = UserConversation.\
+            fetch_all_by_conversation_id(self.conversation_id)
+        participants = [row['user'].recordID.key for row in result]
         for each_participant in participants:
             _publish_record_event(each_participant,
                                   "message",
                                   event_type,
-                                  self.record)
-
-    def save(self) -> None:
-        """
-        Save the Message record to the database.
-        """
-        container = SkygearContainer(api_key=skyoptions.masterkey,
-                                     user_id=current_user_id())
-        container.send_action('record:save', {
-            'database_id': '_private',
-            'records': [serialize_record(self.record)],
-            'atomic': True
-        })
+                                  self)
 
     @property
     def conversation_id(self):
-        return self.record['conversation'].recordID.key
+        return self['conversation'].recordID.key
+
+    @classmethod
+    def fetch_all_by_conversation_id(cls, conversation_id, limit, before_time):
+        database = cls._get_database()
+        predicate = Predicate(conversation__eq=conversation_id,
+                              deleted__eq=False)
+        if before_time is not None:
+            predicate = predicate & Predicate(_created_at__lt=before_time)
+        query = Query('message', predicate=predicate, limit=limit)
+        query.add_order('_created_at', 'desc')
+        return database.query(query)
+
+    @classmethod
+    def fetch_all_by_conversation_id_and_seq(cls,
+                                             conversation_id,
+                                             from_seq,
+                                             to_seq):
+        database = cls._get_database()
+        predicate = Predicate(seq__lte=to_seq,
+                              conversation__eq=conversation_id,
+                              deleted__eq=False)
+        if from_seq >= 0:
+            predicate = predicate & Predicate(seq__gte=from_seq)
+
+        query = Query('message', predicate=predicate, limit=None)
+        return database.query(query)

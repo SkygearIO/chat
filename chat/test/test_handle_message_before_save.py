@@ -48,9 +48,7 @@ class TestHandleMessageBeforeSave(unittest.TestCase):
             'deleted': False
         })
 
-    @patch('chat.message._get_conversation', Mock(
-        return_value={'participant_ids': ['user2', 'user3'],}))
-    @patch('chat.message_handlers.is_user_id_in_conversation', Mock(return_value=False))
+    @patch('chat.message.UserConversation.fetch_one', Mock(return_value=None))
     def test_user_not_in_conversation(self):
         with self.assertRaises(SkygearChatException) as cm:
             handle_message_before_save(

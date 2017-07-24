@@ -2,16 +2,9 @@ from psycopg2.extensions import AsIs
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 from skygear.container import SkygearContainer
-from skygear.models import RecordID, Reference
 from skygear.options import options as skyoptions
-from skygear.transmitter.encoding import deserialize_record
 from skygear.utils import db
 from skygear.utils.context import current_context, current_user_id
-
-from .database import Database
-from .exc import SkygearChatException
-from .predicate import Predicate
-from .query import Query
 
 
 def _get_container():
@@ -21,68 +14,6 @@ def _get_container():
 
 def _get_schema_name():
     return "app_%s" % skyoptions.appname
-
-
-def get_participants_and_admins(conversation_ids):
-    container = _get_container()
-    database = Database(container, '_public')
-    predicate = Predicate(conversation__in=list(set(conversation_ids)))
-    query_result = database.query(
-                   Query('user_conversation', predicate=predicate)
-                   )["result"]
-    admins = {}
-    participants = {}
-    for row in query_result:
-        r = deserialize_record(row)
-        conversation = r['conversation'].recordID.key
-        if conversation not in participants:
-            participants[conversation] = []
-            admins[conversation] = []
-        if r['is_admin']:
-            admins[conversation].append(r['user'].recordID.key)
-        participants[conversation].append(r['user'].recordID.key)
-
-    return participants, admins
-
-
-def _get_conversation(conversation_id):
-    # conversation_id can be Reference, recordID or string
-    if isinstance(conversation_id, Reference):
-        conversation_id = conversation_id.recordID.key
-    if isinstance(conversation_id, RecordID):
-        conversation_id = conversation_id.key
-
-    container = SkygearContainer(api_key=skyoptions.apikey)
-    response = container.send_action(
-        'record:query',
-        {
-            'database_id': '_public',
-            'record_type': 'conversation',
-            'limit': 1,
-            'sort': [],
-            'include': {},
-            'count': False,
-            'predicate': [
-                'eq', {
-                    '$type': 'keypath',
-                    '$val': '_id'
-                },
-                conversation_id
-            ]
-        }
-    )
-
-    if 'error' in response:
-        raise SkygearChatException(response['error'])
-
-    if len(response['result']) == 0:
-        raise SkygearChatException("no conversation found")
-
-    conversation = response['result'][0]
-    participants, admins = get_participants_and_admins([conversation_id])
-    conversation['participant_ids'] = participants[conversation_id]
-    conversation['admin_ids'] = admins[conversation_id]
-    return conversation
 
 
 def _get_channel_by_user_id(user_id):
@@ -144,47 +75,3 @@ def to_rfc3339_or_none(dt):
     if not dt:
         return None
     return timestamp_to_rfc3339_utcoffset(dt.timestamp())
-
-
-def get_key_from_object(obj):
-    if isinstance(obj, Reference):
-        return obj.recordID.key
-    if isinstance(obj, RecordID):
-        return obj.key
-    if isinstance(obj, str):
-        return obj
-    raise ValueError()
-
-
-def fetch_records(container, database_id, record_type, ids, convert_func):
-    """
-    Fetch records with record API
-    TODO: move to pyskygear
-    """
-    ids = list(set(ids))
-    response = container.send_action(
-            'record:query',
-            {
-                'database_id': database_id,
-                'record_type': record_type,
-                'limit': len(ids),
-                'sort': [],
-                'count': False,
-                'predicate': [
-                    'in', {
-                        '$type': 'keypath',
-                        '$val': '_id'
-                    },
-                    ids
-                ]
-            }
-        )
-
-    if 'error' in response:
-        raise SkygearChatException(response['error'])
-
-    results = []
-    for result in response['result']:
-        results.append(convert_func(result))
-
-    return results

@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 from skygear.transmitter.encoding import deserialize_record
 from ..user import User
+from ..conversation import Conversation
 from ..user_conversation import UserConversation
 
 
@@ -20,7 +21,7 @@ class TestUserConversation(unittest.TestCase):
             each_patcher.stop()
 
     def conversation(self):
-        return 'conversation1'
+        return Conversation.new('conversation1', 'user1')
 
     def user1(self):
         return 'user1'
@@ -30,9 +31,9 @@ class TestUserConversation(unittest.TestCase):
 
     def test_consistent_hash(self):
         c = self.conversation()
-        uc1 = UserConversation(c, self.user1())
-        uc2 = UserConversation(c, self.user1())
-        uc3 = UserConversation(c, self.user2())
+        uc1 = UserConversation.new(c, self.user1())
+        uc2 = UserConversation.new(c, self.user1())
+        uc3 = UserConversation.new(c, self.user2())
         r1 = uc1.get_hash()
         r2 = uc2.get_hash()
         r3 = uc3.get_hash()

@@ -3,29 +3,26 @@ from uuid import uuid4
 from psycopg2.extensions import AsIs
 
 import skygear
-from skygear.transmitter.encoding import _RecordDecoder, deserialize_record
+from skygear.transmitter.encoding import _RecordDecoder, serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
-from .conversation import Conversation, get_admin_role, get_participant_role
+from .conversation import Conversation
 from .database import Database
 from .exc import (NotInConversationException, NotSupportedException,
                   SkygearChatException)
-from .predicate import Predicate
+from .message import Message
 from .pubsub import _publish_record_event
-from .query import Query
 from .roles import RolesHelper
 from .user import User
-from .user_conversation import UserConversation, is_user_id_in_conversation
-from .utils import (_get_container, _get_conversation, _get_schema_name,
-                    current_context_has_master_key,
-                    get_participants_and_admins)
+from .user_conversation import UserConversation
+from .utils import (_get_container, _get_schema_name,
+                    current_context_has_master_key)
 
 
 def __validate_user_is_admin(conversation_id):
-    if not is_user_id_in_conversation(current_user_id(),
-                                      conversation_id,
-                                      True):
+    uc = UserConversation.fetch_one(conversation_id)
+    if uc is None or not uc['is_admin']:
         raise NotInConversationException()
 
 
@@ -65,20 +62,24 @@ def __update_roles(container, users, role, flag):
 def __update_participant_roles(container, conversation_id, users, flag):
     __update_roles(container,
                    users,
-                   get_participant_role(conversation_id),
+                   Conversation.get_participant_role(conversation_id),
                    flag)
 
 
 def __update_admin_roles(container, conversation_id, users, flag):
-    __update_roles(container, users, get_admin_role(conversation_id), flag)
+    __update_roles(container,
+                   users,
+                   Conversation.get_admin_role(conversation_id),
+                   flag)
 
 
-def __update_admin_flags(container, conversation, users, flag):
-    records = [{'_id': 'user_conversation/' + UserConversation.
-                get_consistent_hash(conversation, user),
-                'is_admin': flag} for user in users]
-    database = Database(container, '_public')
-    database.save(records)
+def __update_admin_flags(container, conversation_id, user_ids, flag):
+    for user_id in user_ids:
+        uc = UserConversation.fetch_one(conversation_id, user_id=user_id)
+        if uc is None:
+            c = Conversation.new(conversation_id, user_id)
+            uc = UserConversation.new(c, user_id)
+        uc.mark_admin(flag)
 
 
 def __mark_conversation_non_distinct(database, conversation_id):
@@ -115,59 +116,72 @@ def handle_conversation_before_delete(record, conn):
 
 
 def handle_leave_conversation(conversation_id):
-    if not is_user_id_in_conversation(current_user_id(),
-                                      conversation_id):
+    uc = UserConversation.fetch_one(conversation_id)
+    if uc is None:
         raise NotInConversationException()
-    uc = UserConversation(conversation_id, current_user_id())
     uc.delete()
     return {'status': 'OK'}
 
 
 def handle_add_participants(conversation_id,
-                            participants,
+                            participant_ids,
                             is_first_time=False):
 
-    r = _get_conversation(conversation_id)
-    container = _get_container()
-    for participant in participants:
-        if is_user_id_in_conversation(participant,
-                                      conversation_id):
+    for participant in participant_ids:
+        uc = UserConversation.fetch_one(conversation_id,
+                                        user_id=participant)
+        if uc is not None:
             raise SkygearChatException("Already added")
 
-    __update_participant_roles(container, conversation_id, participants, True)
-    database = Database(container, '_public')
-    database.save([UserConversation(conversation_id, participant)
-                   for participant in participants])
-    r = _get_conversation(conversation_id)
+    container = _get_container()
+    __update_participant_roles(container,
+                               conversation_id,
+                               participant_ids, True)
+
+    conversation = Conversation.new(conversation_id, current_user_id())
+    for participant_id in participant_ids:
+        UserConversation.new(conversation, participant_id).save()
+
     if not is_first_time:
+        database = Database(container, '_public')
         __mark_conversation_non_distinct(database, conversation_id)
 
-    existing_participants = []
-    notify_users(deserialize_record(r),
+    conversation = Conversation.fetch_one(conversation_id)
+    existing_participants = conversation['participant_ids']
+    notify_users(conversation,
                  existing_participants,
                  [],
-                 participants)
-    return {'conversation': r}
+                 participant_ids)
+    return {'conversation': serialize_record(conversation)}
 
 
-def handle_remove_participants(conversation_id, participants):
+def handle_remove_participants(conversation_id, participant_ids):
     container = _get_container()
-    __update_participant_roles(container, conversation_id, participants, False)
+    __update_participant_roles(container,
+                               conversation_id,
+                               participant_ids,
+                               False)
     database = Database(container, '_public')
-    database.delete([UserConversation(conversation_id, participant)
-                    for participant in participants])
+    conversation = Conversation.new(conversation_id, current_user_id())
+    ucs = [UserConversation.new(conversation, participant_id)
+           for participant_id in participant_ids]
+    UserConversation.delete_all(ucs)
     __mark_conversation_non_distinct(database, conversation_id)
-    r = _get_conversation(conversation_id)
-    notify_users(deserialize_record(r), r['participant_ids'], participants, [])
-    return {'conversation': r}
+
+    conversation = Conversation.fetch_one(conversation_id)
+    notify_users(conversation,
+                 conversation['participant_ids'],
+                 participant_ids,
+                 [])
+    return {'conversation': serialize_record(conversation)}
 
 
-def handle_admins_lambda(conversation_id, admins, flag):
+def handle_admins_lambda(conversation_id, admin_ids, flag):
     container = _get_container()
-    __update_admin_roles(container, conversation_id, admins, flag)
-    __update_admin_flags(container, conversation_id, admins, flag)
-    r = _get_conversation(conversation_id)
-    return {'conversation': r}
+    __update_admin_roles(container, conversation_id, admin_ids, flag)
+    __update_admin_flags(container, conversation_id, admin_ids, flag)
+    r = Conversation.fetch_one(conversation_id)
+    return {'conversation': serialize_record(r)}
 
 
 def check_if_context_has_master_key(msg):
@@ -181,6 +195,8 @@ def register_conversation_hooks(settings):
         if original_record is None:
             check_if_context_has_master_key(
                     "Call chat:create_conversation instead")
+        record['admin_ids'] = None
+        record['participant_ids'] = None
 
     @skygear.before_delete("conversation", async=False)
     def conversation_before_delete_handler(record, conn):
@@ -188,39 +204,15 @@ def register_conversation_hooks(settings):
                 "Deleting a conversation is not supported")
 
 
-def __uc_to_conversation(uc):
-    d = {}
-    d.update(uc["_transient"]["conversation"])
-    d['unread_count'] = uc['unread_count']
-    d['last_message_ref'] = d.get('last_message', None)
-    d['last_read_message_ref'] = uc.get('last_read_message', None)
-    d['last_message'] = None
-    d['last_read_mesage'] = None
-    return d
-
-
-def __get_messsage_ids_from_conversation(conversation):
-    ids = []
-    decoder = _RecordDecoder()
+def __get_messsage_refs_from_conversation(conversation):
+    refs = []
     last_message_ref = conversation.get('last_message_ref', None)
     if last_message_ref is not None:
-        ids.append(decoder.decode_ref(last_message_ref).recordID.key)
+        refs.append(last_message_ref)
     last_read_message_ref = conversation.get('last_read_message_ref', None)
     if last_read_message_ref is not None:
-        ids.append(decoder.decode_ref(last_read_message_ref).recordID.key)
-    return ids
-
-
-def __get_messages_by_ids(database, message_ids):
-    decoder = _RecordDecoder()
-    messages = {}
-    message_predicate = Predicate(_id__in=message_ids, deleted__eq=False)
-    message_query = Query('message', predicate=message_predicate)
-    message_result = database.query(message_query)["result"]
-    for row in message_result:
-        key = decoder.decode_id(row['_id']).key
-        messages[key] = row
-    return messages
+        refs.append(last_read_message_ref)
+    return refs
 
 
 def __update_conversation_messages(conversation, messages):
@@ -239,64 +231,35 @@ def __update_conversation_messages(conversation, messages):
 
 
 def handle_get_conversation_lambda(conversation_id, include_last_message):
-    container = _get_container()
-    database = Database(container, '_public')
-    query_result = database.query(
-                   Query('user_conversation',
-                         predicate=Predicate(user__eq=current_user_id(),
-                                             conversation__eq=conversation_id),
-                         limit=1,
-                         include=["conversation", "user"]))["result"]
-    conversation = None
-    if len(query_result) == 1:
-        conversation = __uc_to_conversation(query_result[0])
+    conversation = Conversation.fetch_one(conversation_id)
+    if conversation is None:
+        raise SkygearChatException("Conversation not found.")
 
-    if conversation is not None and include_last_message:
-        participants, admins = get_participants_and_admins([conversation_id])
-        message_ids = __get_messsage_ids_from_conversation(conversation)
-        messages = __get_messages_by_ids(database, message_ids)
+    if None and include_last_message:
+        message_refs = __get_messsage_refs_from_conversation(conversation)
+        messages = Message.fetch_all(message_refs)
         conversation = __update_conversation_messages(conversation, messages)
-        get_participants_and_admins
-        conversation['admin_ids'] = admins[conversation_id]
-        conversation['participant_ids'] = participants[conversation_id]
 
-    return {'conversation': conversation}
+    return {'conversation': serialize_record(conversation)}
 
 
 def handle_get_conversations_lambda(page, page_size, include_last_message):
-    container = _get_container()
-    database = Database(container, '_public')
-    offset = (page - 1) * page_size
-    query_result = database.query(
-                   Query('user_conversation',
-                         predicate=Predicate(user__eq=current_user_id()),
-                         offset=offset,
-                         limit=page_size,
-                         include=["conversation", "user"]))["result"]
-    result = []
-    decoder = _RecordDecoder()
-    conversation_ids = []
-    message_ids = []
-    for row in query_result:
-        conversation = __uc_to_conversation(row)
-        conversation_ids.append(decoder.decode_id(conversation['_id']).key)
-        message_ids = message_ids +\
-            __get_messsage_ids_from_conversation(conversation)
-        result.append(conversation)
-
-    messages = {}
+    result = Conversation.fetch_all_with_paging(page, page_size)
     if include_last_message:
-        messages = __get_messages_by_ids(database, message_ids)
+        messages = {}
+        message_refs = []
+        for conversation in result:
+            message_refs = message_refs +\
+                __get_messsage_refs_from_conversation(conversation)
 
-    participants, admins = get_participants_and_admins(conversation_ids)
-    for row in result:
-        conversation = decoder.decode_id(row['_id']).key
-        row['admin_ids'] = admins[conversation]
-        row['participant_ids'] = participants[conversation]
-        if include_last_message:
-            row = __update_conversation_messages(row, messages)
+        messages = Message.fetch_all(message_refs)
 
-    return {"result": result}
+        n = len(result)
+        for i in range(0, n):
+            result[i] = __update_conversation_messages(
+                        result[i], messages)
+
+    return {"result": [serialize_record(r) for r in result]}
 
 
 def handle_delete_conversation_lambda(conversation_id):
@@ -318,17 +281,18 @@ def handle_create_conversation_lambda(participants, title, meta, options):
         __validate_conversation(participants)
 
     conversation_id = str(uuid4())
-    conversation = Conversation(conversation_id, user_id)
+    conversation = Conversation.new(conversation_id, user_id)
     conversation['title'] = title
     conversation['distinct_by_participants'] = is_distinct
     conversation['meta'] = meta
-
-    container = _get_container()
-    database = Database(container, '_public')
-    result = database.save(conversation)
+    conversation.save()
+    conversation['admin_ids'] = []
+    conversation['participant_ids'] = []
     handle_add_participants(conversation_id, participants, True)
     handle_admins_lambda(conversation_id, admins, True)
-    return result
+    conversation['admin_ids'] = admins
+    conversation['participant_ids'] = list(set(participants + admins))
+    return serialize_record(conversation)
 
 
 def register_conversation_lambdas(settings):
