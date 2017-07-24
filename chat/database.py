@@ -13,40 +13,70 @@
 # limitations under the License.
 
 
+from skygear.models import Record
+from skygear.transmitter.encoding import deserialize_record, serialize_record
+
+from .exc import SkygearChatException
+
+
 class Database(object):
     def __init__(self, container, database_id):
         self.container = container
         self.database_id = database_id
 
-    def save(self, records):
-        if not isinstance(records, list):
-            records = [records]
-
+    def save(self, arg, atomic=False):
+        if not isinstance(arg, list):
+            arg = [arg]
+        records = [serialize_record(item)
+                   if isinstance(item, Record) else item
+                   for item in arg]
         return self.container.send_action('record:save', {
             'database_id': self.database_id,
-            'records': records
+            'records': records,
+            'atomic': atomic
         })
 
-    def delete(self, records):
-        if not isinstance(records, list):
-            records = [records]
+    @staticmethod
+    def _encode_id(record_id):
+        return record_id.type + "/" + record_id.key
 
+    def delete(self, arg):
+        if not isinstance(arg, list):
+            arg = [arg]
+        ids = [Database._encode_id(item.id)
+               if isinstance(item, Record)
+               else item
+               for item in arg]
         return self.container.send_action('record:delete', {
             'database_id': self.database_id,
-            'records': records
+            'ids': ids
         })
 
     def query(self, query):
+        include = {v: {"$type": "keypath", "$val": v}
+                   for v in list(set(query.include))}
+
         payload = {'database_id': self.database_id,
                    'record_type': query.record_type,
                    'predicate': query.predicate.to_dict(),
                    'count': query.count,
                    'sort': query.sort,
-                   'include': query.include}
+                   'include': include}
 
         if query.offset is not None:
             payload['offset'] = query.offset
         if query.limit is not None:
             payload['limit'] = query.limit
-
-        return self.container.send_action('record:query', payload)
+        result = self.container.send_action('record:query', payload)
+        if 'error' in result:
+            raise SkygearChatException(result['error']['message'])
+        result = result['result']
+        output = []
+        for r in result:
+            record = deserialize_record(r)
+            if '_transient' in r:
+                t = r['_transient']
+                record['_transient'] = {k: deserialize_record(t[k])
+                                        for k in t.keys()}
+            output.append(record)
+        return output

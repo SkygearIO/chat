@@ -1,122 +1,47 @@
 from psycopg2.extensions import AsIs
-from psycopg2.extras import Json
-from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 import skygear
-from skygear.container import SkygearContainer
-from skygear.options import options as skyoptions
 from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
-from .asset import sign_asset_url
 from .conversation import Conversation
-from .database import Database
 from .exc import (AlreadyDeletedException, MessageNotFoundException,
                   NotInConversationException, NotSupportedException)
 from .message import Message
 from .message_history import MessageHistory
-from .predicate import Predicate
-from .query import Query
-from .utils import _get_conversation, _get_schema_name
+from .user_conversation import UserConversation
+from .utils import _get_schema_name
 
 
 def get_messages(conversation_id, limit, before_time=None):
-    conversation = Conversation(_get_conversation(conversation_id))
-    if not conversation.is_participant(current_user_id()):
-        raise NotInConversationException()
-
-    container = SkygearContainer(api_key=skyoptions.masterkey,
-                                 user_id=current_user_id())
-    database = Database(container, '_private')
-    predicate = Predicate(conversation__eq=conversation_id, deleted__eq=False)
-    if before_time is not None:
-        predicate = predicate & Predicate(_created_at__lt=before_time)
-    query = Query('message', predicate=predicate, limit=limit)
-    query.add_order('_created_at', 'desc')
-    return {'results': database.query(query)["result"]}
-
-
-def get_messages_by_ids(message_ids):
-    '''
-    Return the array of message with gived ids.
-
-    - ACL check will rely on the `participant_ids` of referenced conversation.
-    - For id does not have corresponding message, no error will be reported.
-    - For message that user have no access to, no error will be reported.
-    '''
-    with db.conn() as conn:
-        cur = conn.execute('''
-            SELECT
-                m._id, m._created_at, m._created_by,
-                m.body, m.conversation,
-                m.metadata, m.message_status,
-                m.attachment
-            FROM %(schema_name)s.message AS m
-            LEFT JOIN %(schema_name)s.conversation
-            ON m.conversation=conversation._id
-            WHERE m._id = ANY(%(ids)s)
-            AND conversation.participant_ids @> %(user_id)s
-            ''', {
-                'schema_name': AsIs(_get_schema_name()),
-                'ids': message_ids,
-                'user_id': Json(current_user_id())
-            }
-        )
-
-        results = cursor_to_messages(cur)
-        return {
-            'results': results
-        }
-
-
-def cursor_to_messages(cur):
-    results = []
-    for row in cur:
-        created_stamp = row[1].timestamp()
-        dt = timestamp_to_rfc3339_utcoffset(created_stamp)
-        r = {
-            '_id': 'message/' + row[0],
-            '_created_at': dt,
-            '_created_by': row[2],
-            'body': row[3],
-            'conversation': {
-                '$id': 'conversation/' + row[4],
-                '$type': 'ref'
-            },
-            'metadata': row[5],
-            'message_status': row[6],
-        }
-        if row[7]:
-            r['attachment'] = {
-                '$type': 'asset',
-                '$name': row[7],
-                '$url': sign_asset_url(row[7])
-            }
-        results.append(r)
-    return results
+    messages = Message.fetch_all_by_conversation_id(
+               conversation_id, limit, before_time)
+    return {'results': [serialize_record(message) for message in messages]}
 
 
 def handle_message_before_save(record, original_record, conn):
     message = Message.from_record(record)
-    conversation = Conversation(message.fetchConversationRecord())
-    if not conversation.is_participant(current_user_id()):
-        raise NotInConversationException()
 
     if original_record is not None and original_record['deleted']:
         raise AlreadyDeletedException()
 
+    if UserConversation.fetch_one(message.conversation_id) is None:
+        raise NotInConversationException()
+
     if original_record is None:
-        message.record['deleted'] = False
-        message.record['revision'] = 1
+        message['deleted'] = False
+        message['revision'] = 1
     else:
         message_history = MessageHistory(Message.from_record(original_record))
         message_history.save()
 
-    if message.record.get('message_status', None) is None:
-        message.record['message_status'] = 'delivered'
+    if message.get('message_status', None) is None:
+        message['message_status'] = 'delivered'
 
-    return message.record
+    # TODO use proper ACL setter
+    message._acl = Conversation.get_message_acl(message.conversation_id)
+    return message
 
 
 def handle_message_after_save(record, original_record, conn):
@@ -132,7 +57,7 @@ def handle_message_after_save(record, original_record, conn):
 
     if original_record is None:
         # Update all UserConversation unread count by 1
-        conversation_id = record['conversation'].recordID.key
+        conversation_id = message.conversation_id
         conn.execute('''
             UPDATE %(schema_name)s.user_conversation
             SET
@@ -158,13 +83,14 @@ def handle_message_after_save(record, original_record, conn):
 
 
 def _get_new_last_message_id(conn, message):
+    # TODO rewrite with database.query
     cur = conn.execute('''
             SELECT _id FROM %(schema_name)s.message
             WHERE deleted = false AND seq < %(seq)s
             ORDER BY seq DESC LIMIT 1
         ''', {
             'schema_name': AsIs(_get_schema_name()),
-            'seq': message.record['seq']
+            'seq': message['seq']
         })
     row = cur.fetchone()
     return None if row is None else row['_id']
@@ -172,9 +98,9 @@ def _get_new_last_message_id(conn, message):
 
 def _update_conversation_last_message(conn, conversation, last_message,
                                       new_last_message_id):
-    last_message_key = 'message/' + last_message.record.id.key
-    if last_message_key == conversation.record['last_message']['$id']:
-        conversation_id = last_message.record['conversation'].recordID.key
+    last_message_key = last_message.id.key
+    if last_message_key == conversation['last_message_ref'].recordID.key:
+        conversation_id = last_message.conversation_id
         conn.execute('''
         UPDATE %(schema_name)s.conversation
         SET last_message = %(new_last_message_id)s
@@ -182,7 +108,7 @@ def _update_conversation_last_message(conn, conversation, last_message,
         ''', {
             'schema_name': AsIs(_get_schema_name()),
             'conversation_id': conversation_id,
-            'new_last_message_id': new_last_message_id
+            'new_last_message_id': 'message/' + new_last_message_id
         })
 
 
@@ -195,7 +121,7 @@ def _update_user_conversation_last_read_message(conn, last_message,
     ''', {
         'schema_name': AsIs(_get_schema_name()),
         'new_last_message_id': new_last_message_id,
-        'old_last_message_id': last_message.record.id.key
+        'old_last_message_id': last_message.key
     })
 
 
@@ -205,16 +131,16 @@ def delete_message(message_id):
     - Soft-delete message from record
     - Update last_message and last_read_message
     '''
-    message = Message.fetch(message_id)
+    message = Message.fetch_one(message_id)
     if message is None:
         raise MessageNotFoundException()
 
     message.delete()
-    record = serialize_record(message.record)
+    record = serialize_record(message)
+    conversation = Conversation.fetch_one(message.conversation_id)
 
     with db.conn() as conn:
         new_last_message_id = _get_new_last_message_id(conn, message)
-        conversation = Conversation(message.fetchConversationRecord())
         _update_conversation_last_message(conn, conversation, message,
                                           new_last_message_id)
         _update_user_conversation_last_read_message(conn, message,
@@ -240,11 +166,6 @@ def register_message_lambdas(settings):
     @skygear.op("chat:get_messages", auth_required=True, user_required=True)
     def get_messages_lambda(conversation_id, limit, before_time=None):
         return get_messages(conversation_id, limit, before_time)
-
-    @skygear.op("chat:get_messages_by_ids", auth_required=True,
-                user_required=True)
-    def get_messages_by_ids_lambda(message_ids):
-        return get_messages_by_ids(message_ids)
 
     @skygear.op("chat:delete_message", auth_required=True, user_required=True)
     def delete_message_lambda(message_id):

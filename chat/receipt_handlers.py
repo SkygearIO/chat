@@ -4,20 +4,14 @@ from collections import Counter
 from psycopg2.extensions import AsIs
 
 import skygear
-from skygear.container import SkygearContainer
-from skygear.options import options as skyoptions
-from skygear.transmitter.encoding import deserialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
-from .conversation import Conversation
-from .database import Database
 from .exc import (NotInConversationException, NotSupportedException,
                   SkygearChatException)
 from .message import Message
-from .predicate import Predicate
-from .query import Query
-from .receipt import Receipt, ReceiptCollection
+from .receipt import Receipt
+from .user_conversation import UserConversation
 from .utils import (_get_schema_name, current_context_has_master_key,
                     is_str_list)
 
@@ -55,40 +49,28 @@ def handle_mark_as_read_by_range(from_message_id, to_message_id):
     if from_message_id is not None:
         message_ids = [from_message_id] + message_ids
 
-    messages = Message.fetch(message_ids)
+    messages = Message.fetch_all(message_ids)
     conversation_id = None
     for message in messages:
-        if message.record.id.key == from_message_id:
-            from_seq = message.record['seq']
-        if message.record.id.key == to_message_id:
-            to_seq = message.record['seq']
-            conversation_id = Conversation(message
-                                           .conversationRecord).record.id.key
+        if message.id.key == from_message_id:
+            from_seq = message['seq']
+        if message.id.key == to_message_id:
+            to_seq = message['seq']
+            conversation_id = message.conversation_id
 
     if conversation_id is None:
         raise SkygearChatException('Unknown conversation')
 
-    container = SkygearContainer(api_key=skyoptions.masterkey,
-                                 user_id=current_user_id())
-    database = Database(container, '_private')
-    predicate = Predicate(seq__lte=to_seq,
-                          conversation__eq=conversation_id,
-                          deleted__eq=False)
-    if from_seq >= 0:
-        predicate = predicate & Predicate(seq__gte=from_seq)
-
-    query = Query('message', predicate=predicate, limit=None)
-    results = [deserialize_record(r).id.key
-               for r in database.query(query)["result"]]
-    mark_messages(results, True, True)
+    messages_to_be_marked = Message.\
+        fetch_all_by_conversation_id_and_seq(
+                            conversation_id, from_seq, to_seq)
+    mark_messages(messages_to_be_marked, True, True)
 
 
 def __validate_current_user_in_messages(messages, user_id):
     for message in messages:
-        conversation = Conversation(message.conversationRecord)
-        if not conversation.is_participant(user_id):
-            print("user %s is not a participant in conversation %s" %
-                  (user_id, conversation.record.id.key))
+        if UserConversation.fetch_one(message.conversation_id,
+                                      user_id=user_id) is None:
             raise NotInConversationException()
 
 
@@ -96,15 +78,6 @@ def __update_and_notify_unread_messages(messages, conn):
     for message in messages:
         message.updateMessageStatus(conn)
         message.notifyParticipants()
-
-
-def __fetch_receipts(messages, user_id):
-    receipt_ids = [Receipt.consistent_id(user_id,
-                   message.record.id.key)
-                   for message in messages]
-
-    found_receipts = {x.record.id.key: x for x in Receipt.fetch(receipt_ids)}
-    return found_receipts
 
 
 def __update_user_conversations(unread_counter, last_read_messages, conn):
@@ -161,8 +134,8 @@ def __update_user_conversations(unread_counter, last_read_messages, conn):
             'schema_name': schema_name,
             'conversation_id': key,
             'user_id': user_id,
-            'seq': m.record['seq'],
-            'new_id': m.record.id.key
+            'seq': m['seq'],
+            'new_id': m.id.key
         })
         print("updating last_read_message in user=%s,conversation=%s"
               % (user_id, key))
@@ -172,26 +145,29 @@ def __update_last_read_messages(last_read_messages, message, key):
     last_read_message = last_read_messages.get(key, None)
     if last_read_message is None:
         last_read_message = message
-    if message.record['seq'] > last_read_message.record['seq']:
+    if message['seq'] > last_read_message['seq']:
         last_read_message = message
     last_read_messages[key] = last_read_message
 
 
 def __get_messages_receipts(messages, user_id):
     output = []
-    found_receipts = __fetch_receipts(messages, user_id)
+    found_receipts = Receipt.\
+        fetch_all_by_messages_and_user_id(messages, user_id)
+    found_receipts = {x.id.key: x for x in found_receipts}
+
     for message in messages:
-        message_id = message.record.id.key
+        message_id = message.id.key
         receipt_id = Receipt.consistent_id(user_id, message_id)
         receipt = found_receipts.get(receipt_id, None)
         if receipt is None:
-            receipt = receipt(user_id, message_id)
+            receipt = Receipt.new(user_id, message_id)
         output.append((message, receipt))
     return output
 
 
 def __process_message_receipts(tuples, mark_delivered, mark_read):
-    new_receipts = ReceiptCollection()
+    new_receipts = []
     unread_messages = []
     unread_counter = Counter()
     last_read_messages = {}
@@ -205,12 +181,12 @@ def __process_message_receipts(tuples, mark_delivered, mark_read):
             receipt.mark_as_delivered()
         if should_mark_read:
             receipt.mark_as_read()
-            key = Conversation(message.conversationRecord).record.id.key
+            key = message.conversation_id
             unread_counter[key] += 1
             __update_last_read_messages(last_read_messages, message, key)
 
             print("new receipt,message_id=%s" %
-                  (message.record.id.key))
+                  (message.id.key))
 
         if should_mark_read or should_mark_delivered:
             new_receipts.append(receipt)
@@ -225,7 +201,7 @@ def mark_messages(message_ids, mark_delivered, mark_read):
     TODO: update this checking after role based ACL
     """
     user_id = current_user_id()
-    messages = Message.fetch(message_ids)
+    messages = Message.fetch_all(message_ids)
     __validate_current_user_in_messages(messages, user_id)
     print("number of messages=%d" % (len(messages)))
 
@@ -236,7 +212,7 @@ def mark_messages(message_ids, mark_delivered, mark_read):
                                    mark_read)
 
     print("number of new receipts=%d" % (len(new_receipts)))
-    new_receipts.save()
+    Receipt.save_all(new_receipts)
 
     with db.conn() as conn:
         __update_user_conversations(unread_counter, last_read_messages, conn)
@@ -248,17 +224,12 @@ def handle_get_receipt(message_id):
     Retrieve receipts for a message.
     """
     logging.info("handle_get_receipt: for message_id %s", message_id)
-    messages = Message.fetch(message_id)
-    if len(messages) == 0:
+    message = Message.fetch_one(message_id)
+    if message is None:
         raise SkygearChatException('Message not found')
-    message = messages[0]
-    conversation = Conversation(message.conversationRecord)
-    if not conversation.is_participant(current_user_id()):
+    if UserConversation.fetch_one(message.conversation_id) is None:
         raise NotInConversationException()
 
-    logging.debug(
-        "handle_get_receipt: current user is conversation participant"
-    )
     return {'receipts': message.getReceiptList()}
 
 

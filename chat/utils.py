@@ -2,52 +2,18 @@ from psycopg2.extensions import AsIs
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 from skygear.container import SkygearContainer
-from skygear.models import RecordID, Reference
 from skygear.options import options as skyoptions
 from skygear.utils import db
-from skygear.utils.context import current_context
+from skygear.utils.context import current_context, current_user_id
 
-from .exc import SkygearChatException
+
+def _get_container():
+    return SkygearContainer(api_key=skyoptions.masterkey,
+                            user_id=current_user_id())
 
 
 def _get_schema_name():
     return "app_%s" % skyoptions.appname
-
-
-def _get_conversation(conversation_id):
-    # conversation_id can be Reference, recordID or string
-    if isinstance(conversation_id, Reference):
-        conversation_id = conversation_id.recordID.key
-    if isinstance(conversation_id, RecordID):
-        conversation_id = conversation_id.key
-
-    container = SkygearContainer(api_key=skyoptions.apikey)
-    response = container.send_action(
-        'record:query',
-        {
-            'database_id': '_public',
-            'record_type': 'conversation',
-            'limit': 1,
-            'sort': [],
-            'include': {},
-            'count': False,
-            'predicate': [
-                'eq', {
-                    '$type': 'keypath',
-                    '$val': '_id'
-                },
-                conversation_id
-            ]
-        }
-    )
-
-    if 'error' in response:
-        raise SkygearChatException(response['error'])
-
-    if len(response['result']) == 0:
-        raise SkygearChatException("no conversation found")
-
-    return response['result'][0]
 
 
 def _get_channel_by_user_id(user_id):
@@ -109,47 +75,3 @@ def to_rfc3339_or_none(dt):
     if not dt:
         return None
     return timestamp_to_rfc3339_utcoffset(dt.timestamp())
-
-
-def get_key_from_object(obj):
-    if isinstance(obj, Reference):
-        return obj.recordID.key
-    if isinstance(obj, RecordID):
-        return obj.key
-    if isinstance(obj, str):
-        return obj
-    raise ValueError()
-
-
-def fetch_records(container, database_id, record_type, ids, convert_func):
-    """
-    Fetch records with record API
-    TODO: move to pyskygear
-    """
-    ids = list(set(ids))
-    response = container.send_action(
-            'record:query',
-            {
-                'database_id': database_id,
-                'record_type': record_type,
-                'limit': len(ids),
-                'sort': [],
-                'count': False,
-                'predicate': [
-                    'in', {
-                        '$type': 'keypath',
-                        '$val': '_id'
-                    },
-                    ids
-                ]
-            }
-        )
-
-    if 'error' in response:
-        raise SkygearChatException(response['error'])
-
-    results = []
-    for result in response['result']:
-        results.append(convert_func(result))
-
-    return results
