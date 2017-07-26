@@ -3,7 +3,7 @@ from uuid import uuid4
 from psycopg2.extensions import AsIs
 
 import skygear
-from skygear.transmitter.encoding import _RecordDecoder, serialize_record
+from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
@@ -127,11 +127,15 @@ def handle_add_participants(conversation_id,
                             participant_ids,
                             is_first_time=False):
 
+    existing_participants = []
     for participant in participant_ids:
         uc = UserConversation.fetch_one(conversation_id,
                                         user_id=participant)
         if uc is not None:
-            raise SkygearChatException("Already added")
+            existing_participants.append(participant)
+
+    participant_ids = [x for x in participant_ids
+                       if x not in existing_participants]
 
     container = _get_container()
     __update_participant_roles(container,
@@ -218,16 +222,15 @@ def __get_messsage_refs_from_conversation(conversation):
 
 
 def __update_conversation_messages(conversation, messages):
-    decoder = _RecordDecoder()
     last_message_ref = conversation.get('last_message_ref')
     last_read_message_ref = conversation.get('last_read_message_ref')
 
     if last_message_ref is not None:
-        key = decoder.decode_ref(last_message_ref).recordID.key
+        key = last_message_ref.recordID.key
         conversation['last_message'] = messages[key]
 
     if last_read_message_ref is not None:
-        key = decoder.decode_ref(last_read_message_ref).recordID.key
+        key = last_read_message_ref.recordID.key
         conversation['last_read_message'] = messages[key]
     return conversation
 
@@ -240,6 +243,8 @@ def handle_get_conversation_lambda(conversation_id, include_last_message):
     if None and include_last_message:
         message_refs = __get_messsage_refs_from_conversation(conversation)
         messages = Message.fetch_all(message_refs)
+        messages = {message.id.key: serialize_record(message)
+                    for message in messages}
         conversation = __update_conversation_messages(conversation, messages)
 
     return {'conversation': serialize_record(conversation)}
@@ -255,13 +260,14 @@ def handle_get_conversations_lambda(page, page_size, include_last_message):
                 __get_messsage_refs_from_conversation(conversation)
 
         messages = Message.fetch_all(message_refs)
-
+        messages = {message.id.key: serialize_record(message)
+                    for message in messages}
         n = len(result)
         for i in range(0, n):
             result[i] = __update_conversation_messages(
                         result[i], messages)
 
-    return {"result": [serialize_record(r) for r in result]}
+    return {"conversations": [serialize_record(r) for r in result]}
 
 
 def handle_delete_conversation_lambda(conversation_id):
@@ -270,7 +276,10 @@ def handle_delete_conversation_lambda(conversation_id):
 
 
 def handle_create_conversation_lambda(participants, title, meta, options):
-    participants = [User.deserialize(p).id.key for p in participants]
+    participants = [p if isinstance(p, str) else
+                    User.deserialize(p).id.key for p in participants]
+    if options is None:
+        options = {}
     user_id = current_user_id()
     admins = [user_id]
     admins_from_options = [User.deserialize(a).id.key
@@ -294,7 +303,7 @@ def handle_create_conversation_lambda(participants, title, meta, options):
     handle_admins_lambda(conversation_id, admins, True)
     conversation['admin_ids'] = admins
     conversation['participant_ids'] = list(set(participants + admins))
-    return serialize_record(conversation)
+    return {'conversation': serialize_record(conversation)}
 
 
 def register_conversation_lambdas(settings):

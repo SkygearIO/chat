@@ -43,10 +43,10 @@ class Conversation(ChatRecord):
     def __uc_to_conversation(cls, uc):
         c = uc['_transient']['conversation']
         c['unread_count'] = uc['unread_count']
-        c['last_message_ref'] = uc.get('last_message', None)
+        c['last_message_ref'] = c.get('last_message', None)
         c['last_read_message_ref'] = uc.get('last_read_message', None)
         c['last_message'] = None
-        c['last_read_mesage'] = None
+        c['last_read_message'] = None
         return Conversation.from_record(c)
 
     @classmethod

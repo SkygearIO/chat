@@ -64,6 +64,5 @@ def register_initialization_event_handlers(settings):
                               conversation_schema,
                               message_schema,
                               message_history_schema,
-                              receipt_schema
-                             ],
+                              receipt_schema],
                              plugin_request=True)
