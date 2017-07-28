@@ -38,6 +38,7 @@ def register_initialization_event_handlers(settings):
         conversation_schema = Schema('conversation',
                                      [Field('title', 'string'),
                                       Field('metadata', 'json'),
+                                      Field('deleted', 'boolean'),
                                       Field('distinct_by_participants',
                                             'boolean'),
                                       Field('last_message', 'ref(message)')])

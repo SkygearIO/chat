@@ -2,6 +2,7 @@ from skygear.models import (ACCESS_CONTROL_ENTRY_LEVEL_READ,
                             ACCESS_CONTROL_ENTRY_LEVEL_WRITE, RecordID,
                             RoleAccessControlEntry)
 
+from .database import Database
 from .exc import SkygearChatException
 from .predicate import Predicate
 from .query import Query
@@ -11,6 +12,19 @@ from .user_conversation import UserConversation
 
 class Conversation(ChatRecord):
     record_type = 'conversation'
+
+    def mark_deleted(self):
+        database = self._get_database()
+        database.save([{'_id': Database._encode_id(self.id),
+                        'deleted': True}])
+
+    def mark_non_distinct(self):
+        database = self._get_database()
+        database.save([{'_id': Database._encode_id(self.id),
+                        'distinct_by_participants': True}])
+
+    def is_deleted(self):
+        return self.get('deleted', False)
 
     @classmethod
     def new(cls, conversation_id, user_id):
@@ -42,6 +56,8 @@ class Conversation(ChatRecord):
     @classmethod
     def __uc_to_conversation(cls, uc):
         c = uc['_transient']['conversation']
+        if c.get('deleted', False):
+            return None
         c['unread_count'] = uc['unread_count']
         c['last_message_ref'] = c.get('last_message', None)
         c['last_read_message_ref'] = uc.get('last_read_message', None)
@@ -54,6 +70,7 @@ class Conversation(ChatRecord):
         ucs = UserConversation.fetch_all_with_paging(page, page_size)
         result = [cls.__uc_to_conversation(uc)
                   for uc in ucs]
+        result = [c for c in result if c is not None]
         participants, admins = cls.__get_participants_and_admins(result)
         for row in result:
             key = row.id.key
@@ -68,13 +85,16 @@ class Conversation(ChatRecord):
             uc = UserConversation.fetch_one(conversation_id)
             if uc:
                 result = cls.__uc_to_conversation(uc)
-        if result is None:
-            result = super(Conversation, cls).fetch_one(conversation_id)
+        else:
+            if result is None:
+                result = super(Conversation, cls).fetch_one(conversation_id)
+                if result is not None and result.get('deleted', False):
+                    result = None
 
         if result is None:
-            raise SkygearChatException("Conversation not found,\
-                                       conversation_id=%s" %
-                                       (conversation_id))
+            msg = "Conversation not found,conversation_id=%s" %\
+                  (conversation_id)
+            raise SkygearChatException(msg)
 
         participants, admins = cls.__get_participants_and_admins([result])
         key = result.id.key
@@ -109,3 +129,8 @@ class Conversation(ChatRecord):
         return [RoleAccessControlEntry(
                 cls.get_participant_role(conversation_id),
                 ACCESS_CONTROL_ENTRY_LEVEL_WRITE)]
+
+    @classmethod
+    def exists(cls, conversation_id):
+        conversation = Conversation.fetch_one(conversation_id)
+        return not (conversation is None or conversation.is_deleted())

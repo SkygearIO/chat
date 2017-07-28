@@ -8,9 +8,8 @@ from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .conversation import Conversation
-from .database import Database
-from .exc import (NotInConversationException, NotSupportedException,
-                  SkygearChatException)
+from .exc import (NotAdminConversationException, NotInConversationException,
+                  NotSupportedException, SkygearChatException)
 from .message import Message
 from .pubsub import _publish_record_event
 from .roles import RolesHelper
@@ -22,8 +21,10 @@ from .utils import (_get_container, _get_schema_name,
 
 def __validate_user_is_admin(conversation_id):
     uc = UserConversation.fetch_one(conversation_id)
-    if uc is None or not uc['is_admin']:
+    if uc is None:
         raise NotInConversationException()
+    if not uc['is_admin']:
+        raise NotAdminConversationException()
 
 
 def __validate_conversation(participants):
@@ -82,11 +83,6 @@ def __update_admin_flags(container, conversation_id, user_ids, flag):
         uc.mark_admin(flag)
 
 
-def __mark_conversation_non_distinct(database, conversation_id):
-    database.save([{'_id': 'conversation/' + conversation_id,
-                    'distinct_by_participants': False}])
-
-
 def notify_users(record,
                  unchanged_participants,
                  old_participants,
@@ -112,7 +108,7 @@ def notify_users(record,
 
 
 def handle_conversation_before_delete(record, conn):
-    raise NotSupportedException("Deleting a conversation is not supported")
+    raise NotSupportedException("Call chat:delete_conversation instead.")
 
 
 def handle_leave_conversation(conversation_id):
@@ -147,8 +143,7 @@ def handle_add_participants(conversation_id,
         UserConversation.new(conversation, participant_id).save()
 
     if not is_first_time:
-        database = Database(container, '_public')
-        __mark_conversation_non_distinct(database, conversation_id)
+        conversation.mark_non_distinct()
 
     conversation = Conversation.fetch_one(conversation_id)
     existing_participants = conversation['participant_ids']
@@ -165,14 +160,13 @@ def handle_remove_participants(conversation_id, participant_ids):
                                conversation_id,
                                participant_ids,
                                False)
-    database = Database(container, '_public')
     conversation = Conversation.new(conversation_id, current_user_id())
     ucs = [UserConversation.new(conversation, participant_id)
            for participant_id in participant_ids]
     UserConversation.delete_all(ucs)
-    __mark_conversation_non_distinct(database, conversation_id)
+    conversation.mark_non_distinct()
 
-    conversation = Conversation.fetch_one(conversation_id)
+    conversation = Conversation.fetch_one(conversation_id, with_uc=False)
     notify_users(conversation,
                  conversation['participant_ids'],
                  participant_ids,
@@ -271,7 +265,12 @@ def handle_get_conversations_lambda(page, page_size, include_last_message):
 
 
 def handle_delete_conversation_lambda(conversation_id):
-    # TODO: implement deletion, kick all participants and admin
+    __validate_user_is_admin(conversation_id)
+    conversation = Conversation.fetch_one(conversation_id)
+    handle_admins_lambda(conversation_id, conversation['admin_ids'], False)
+    handle_remove_participants(conversation_id,
+                               conversation['participant_ids'])
+    conversation.mark_deleted()
     return None
 
 
@@ -296,6 +295,7 @@ def handle_create_conversation_lambda(participants, title, meta, options):
     conversation['title'] = title
     conversation['distinct_by_participants'] = is_distinct
     conversation['meta'] = meta
+    conversation['deleted'] = False
     conversation.save()
     conversation['admin_ids'] = []
     conversation['participant_ids'] = []

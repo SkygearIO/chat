@@ -67,6 +67,8 @@ class ChatRecord(Record):
                      record.owner_id,
                      record.acl,
                      created_at=record.created_at,
+                     created_by=record.created_by,
                      updated_at=record.updated_at,
+                     updated_by=record.updated_by,
                      data=record.data)
         return record

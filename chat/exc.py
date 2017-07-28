@@ -14,7 +14,15 @@ class SkygearChatException(SkygearException):
 class NotInConversationException(SkygearChatException):
     def __init__(self):
         super().__init__(
-            "user not in conversation, permission denied",
+            "user is not in the conversation, permission denied",
+            PermissionDenied
+        )
+
+
+class NotAdminConversationException(SkygearChatException):
+    def __init__(self):
+        super().__init__(
+            "user is not an admin, permission denied",
             PermissionDenied
         )
 
@@ -23,6 +31,14 @@ class MessageNotFoundException(SkygearChatException):
     def __init__(self):
         super().__init__(
             "message not found",
+            InvalidArgument
+        )
+
+
+class ConversationNotFoundException(SkygearChatException):
+    def __init__(self):
+        super().__init__(
+            "conversation not found",
             InvalidArgument
         )
 

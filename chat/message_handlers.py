@@ -6,8 +6,9 @@ from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .conversation import Conversation
-from .exc import (AlreadyDeletedException, MessageNotFoundException,
-                  NotInConversationException, NotSupportedException)
+from .exc import (AlreadyDeletedException, ConversationNotFoundException,
+                  MessageNotFoundException, NotInConversationException,
+                  NotSupportedException)
 from .message import Message
 from .message_history import MessageHistory
 from .user_conversation import UserConversation
@@ -15,6 +16,8 @@ from .utils import _get_schema_name
 
 
 def get_messages(conversation_id, limit, before_time=None):
+    if not Conversation.exists(conversation_id):
+        raise ConversationNotFoundException()
     messages = Message.fetch_all_by_conversation_id(
                conversation_id, limit, before_time)
     return {'results': [serialize_record(message) for message in messages]}
@@ -41,7 +44,7 @@ def handle_message_before_save(record, original_record, conn):
 
     # TODO use proper ACL setter
     message._acl = Conversation.get_message_acl(message.conversation_id)
-    return message
+    return serialize_record(message)
 
 
 def handle_message_after_save(record, original_record, conn):
