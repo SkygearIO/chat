@@ -13,18 +13,10 @@ from .user_conversation import UserConversation
 class Conversation(ChatRecord):
     record_type = 'conversation'
 
-    def mark_deleted(self):
-        database = self._get_database()
-        database.save([{'_id': Database._encode_id(self.id),
-                        'deleted': True}])
-
     def mark_non_distinct(self):
         database = self._get_database()
         database.save([{'_id': Database._encode_id(self.id),
                         'distinct_by_participants': True}])
-
-    def is_deleted(self):
-        return self.get('deleted', False)
 
     @classmethod
     def new(cls, conversation_id, user_id):
@@ -56,8 +48,6 @@ class Conversation(ChatRecord):
     @classmethod
     def __uc_to_conversation(cls, uc):
         c = uc['_transient']['conversation']
-        if c.get('deleted', False):
-            return None
         c['unread_count'] = uc['unread_count']
         c['last_message_ref'] = c.get('last_message', None)
         c['last_read_message_ref'] = uc.get('last_read_message', None)
@@ -88,8 +78,6 @@ class Conversation(ChatRecord):
         else:
             if result is None:
                 result = super(Conversation, cls).fetch_one(conversation_id)
-                if result is not None and result.get('deleted', False):
-                    result = None
 
         if result is None:
             msg = "Conversation not found,conversation_id=%s" %\
@@ -133,4 +121,4 @@ class Conversation(ChatRecord):
     @classmethod
     def exists(cls, conversation_id):
         conversation = Conversation.fetch_one(conversation_id)
-        return not (conversation is None or conversation.is_deleted())
+        return not (conversation is None)

@@ -270,7 +270,6 @@ def handle_delete_conversation_lambda(conversation_id):
     handle_admins_lambda(conversation_id, conversation['admin_ids'], False)
     handle_remove_participants(conversation_id,
                                conversation['participant_ids'])
-    conversation.mark_deleted()
     return None
 
 
@@ -295,7 +294,6 @@ def handle_create_conversation_lambda(participants, title, meta, options):
     conversation['title'] = title
     conversation['distinct_by_participants'] = is_distinct
     conversation['meta'] = meta
-    conversation['deleted'] = False
     conversation.save()
     conversation['admin_ids'] = []
     conversation['participant_ids'] = []
