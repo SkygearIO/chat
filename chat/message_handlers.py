@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from psycopg2.extensions import AsIs
 
 import skygear
+from skygear.models import RecordID, Reference
 from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
@@ -15,11 +18,11 @@ from .user_conversation import UserConversation
 from .utils import _get_schema_name
 
 
-def get_messages(conversation_id, limit, before_time=None):
+def get_messages(conversation_id, limit, before_time=None, order=None):
     if not Conversation.exists(conversation_id):
         raise ConversationNotFoundException()
     messages = Message.fetch_all_by_conversation_id(
-               conversation_id, limit, before_time)
+               conversation_id, limit, before_time, order)
     return {'results': [serialize_record(message) for message in messages]}
 
 
@@ -38,6 +41,8 @@ def handle_message_before_save(record, original_record, conn):
     else:
         message_history = MessageHistory(Message.from_record(original_record))
         message_history.save()
+    message['edited_at'] = datetime.utcnow()
+    message['edited_by'] = Reference(RecordID('user', current_user_id()))
 
     if message.get('message_status', None) is None:
         message['message_status'] = 'delivered'
@@ -167,8 +172,8 @@ def register_message_hooks(settings):
 
 def register_message_lambdas(settings):
     @skygear.op("chat:get_messages", auth_required=True, user_required=True)
-    def get_messages_lambda(conversation_id, limit, before_time=None):
-        return get_messages(conversation_id, limit, before_time)
+    def get_messages_lambda(conversation_id, limit, before_time=None, order=None):
+        return get_messages(conversation_id, limit, before_time, order)
 
     @skygear.op("chat:delete_message", auth_required=True, user_required=True)
     def delete_message_lambda(message_id):
