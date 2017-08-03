@@ -13,7 +13,9 @@ def register_initialization_event_handlers(settings):
                 Field('metadata', 'json'),
                 Field('conversation', 'ref(conversation)'),
                 Field('message_status', 'string'),
-                Field('seq', 'sequence')]
+                Field('seq', 'sequence'),
+                Field('edited_by', 'ref(user)'),
+                Field('edited_at', 'datetime')]
 
     def _message_schema():
         fields = _base_message_fields() + [Field('deleted', 'boolean')]

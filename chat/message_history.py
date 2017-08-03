@@ -14,7 +14,8 @@ class MessageHistory(ChatRecord):
                          current_user_id(),
                          message.acl)
         for key in ['attachment', 'body', 'metadata',
-                    'conversation', 'message_status']:
+                    'conversation', 'message_status',
+                    'edited_by', 'edited_at']:
             if key in message:
-                self[key] = message[key]
+                self[key] = message.get(key, None)
         self['parent'] = Reference(message.id)
