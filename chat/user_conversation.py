@@ -73,9 +73,10 @@ class UserConversation(ChatRecord):
     def fetch_all_by_conversation_id(cls, conversation_id):
         database = cls._get_database()
         predicate = Predicate(conversation__eq=conversation_id)
-        return database.query(Query(cls.record_type,
-                                    predicate=predicate,
-                                    include=["conversation", "user"]))
+        records = database.query(Query(cls.record_type,
+                                       predicate=predicate,
+                                       include=["conversation", "user"]))
+        return [UserConversation.from_record(record) for record in records]
 
     @classmethod
     def fetch_one(cls,
