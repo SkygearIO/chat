@@ -172,7 +172,8 @@ def register_message_hooks(settings):
 
 def register_message_lambdas(settings):
     @skygear.op("chat:get_messages", auth_required=True, user_required=True)
-    def get_messages_lambda(conversation_id, limit, before_time=None, order=None):
+    def get_messages_lambda(conversation_id, limit,
+                            before_time=None, order=None):
         return get_messages(conversation_id, limit, before_time, order)
 
     @skygear.op("chat:delete_message", auth_required=True, user_required=True)

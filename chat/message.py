@@ -109,7 +109,8 @@ class Message(ChatRecord):
         return self['conversation'].recordID.key
 
     @classmethod
-    def fetch_all_by_conversation_id(cls, conversation_id, limit, before_time, order):
+    def fetch_all_by_conversation_id(cls, conversation_id,
+                                     limit, before_time, order):
         database = cls._get_database()
         predicate = Predicate(conversation__eq=conversation_id,
                               deleted__eq=False)
