@@ -16,6 +16,7 @@
 from skygear.models import Record
 from skygear.transmitter.encoding import deserialize_record, serialize_record
 
+from .asset import sign_asset_url
 from .exc import SkygearChatException
 
 
@@ -78,5 +79,9 @@ class Database(object):
                 t = r['_transient']
                 record['_transient'] = {k: deserialize_record(t[k])
                                         for k in t.keys()}
+            if 'attachment' in r:
+                record['attachment'] = r['attachment'].copy()
+                record['attachment']['$url'] =\
+                    sign_asset_url(r['attachment']['$name'])
             output.append(record)
         return output

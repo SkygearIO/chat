@@ -66,9 +66,9 @@ class Message(ChatRecord):
                     AND read_at IS NOT NULL
               ),
               participant_count AS (
-                SELECT participant_count as count
-                FROM %(schema_name)s.conversation
-                WHERE _id = %(conversation_id)s
+                SELECT count(1) as count
+                FROM %(schema_name)s.user_conversation
+                WHERE conversation = %(conversation_id)s
               )
             UPDATE %(schema_name)s.message
             SET _updated_at = NOW(),

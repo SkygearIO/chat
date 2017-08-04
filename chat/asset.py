@@ -19,9 +19,7 @@ def sign_asset_url(name):
     hasher.update(name.encode('utf-8'))
     hasher.update(expired_at_str.encode('utf-8'))
 
-    # TODO(limouren): investigate why python generates hash with an extra byte
-    # compared with golang
-    signature = base64.urlsafe_b64encode(hasher.digest()[:-1]).decode('utf-8')
+    signature = base64.urlsafe_b64encode(hasher.digest()).decode('utf-8')
 
     return '%s/%s?expiredAt=%s&signature=%s' % (
         _asset_prefix(),

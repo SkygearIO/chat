@@ -14,6 +14,7 @@ def register_initialization_event_handlers(settings):
                 Field('conversation', 'ref(conversation)'),
                 Field('message_status', 'string'),
                 Field('seq', 'sequence'),
+                Field('revision', 'number'),
                 Field('edited_by', 'ref(user)'),
                 Field('edited_at', 'datetime')]
 
