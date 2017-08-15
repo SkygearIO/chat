@@ -293,7 +293,7 @@ def handle_create_conversation_lambda(participants, title, meta, options):
     conversation = Conversation.new(conversation_id, user_id)
     conversation['title'] = title
     conversation['distinct_by_participants'] = is_distinct
-    conversation['meta'] = meta
+    conversation['metadata'] = meta
     conversation.save()
     conversation['admin_ids'] = []
     conversation['participant_ids'] = []
