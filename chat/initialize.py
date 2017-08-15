@@ -56,7 +56,7 @@ def register_initialization_event_handlers(settings):
                                                  'ref(message)'),
                                            Field('is_admin',
                                                  'boolean')])
-        receipt_schema = Schema('reeipt',
+        receipt_schema = Schema('receipt',
                                 [Field('user', 'ref(user)'),
                                  Field('message', 'ref(message)'),
                                  Field('read_at', 'datetime'),
