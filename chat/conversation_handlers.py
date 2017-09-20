@@ -37,7 +37,7 @@ def __validate_conversation(participants):
                                     c.distinct_by_participants = TRUE
                                 AND
                                 (
-                                    SELECT COUNT(DISTINCT user)
+                                    SELECT COUNT(DISTINCT uc.user)
                                     FROM %(schema_name)s.user_conversation
                                     AS uc
                                     WHERE
