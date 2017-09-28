@@ -56,8 +56,8 @@ class Conversation(ChatRecord):
         return Conversation.from_record(c)
 
     @classmethod
-    def fetch_all_with_paging(cls, page, page_size):
-        ucs = UserConversation.fetch_all_with_paging(page, page_size)
+    def fetch_all_with_paging(cls, page, page_size, order='desc'):
+        ucs = UserConversation.fetch_all_with_paging(page, page_size, order)
         result = [cls.__uc_to_conversation(uc)
                   for uc in ucs]
         result = [c for c in result if c is not None]

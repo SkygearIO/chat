@@ -244,8 +244,11 @@ def handle_get_conversation_lambda(conversation_id, include_last_message):
     return {'conversation': serialize_record(conversation)}
 
 
-def handle_get_conversations_lambda(page, page_size, include_last_message):
-    result = Conversation.fetch_all_with_paging(page, page_size)
+def handle_get_conversations_lambda(page,
+                                    page_size,
+                                    include_last_message,
+                                    order='desc'):
+    result = Conversation.fetch_all_with_paging(page, page_size, order)
     if include_last_message:
         messages = {}
         message_refs = []
@@ -336,10 +339,14 @@ def register_conversation_lambdas(settings):
 
     @skygear.op("chat:get_conversations",
                 auth_required=True, user_required=True)
-    def get_conversations_lambda(page, page_size, include_last_message):
+    def get_conversations_lambda(page,
+                                 page_size,
+                                 include_last_message,
+                                 order='desc'):
         return handle_get_conversations_lambda(page,
                                                page_size,
-                                               include_last_message)
+                                               include_last_message,
+                                               order)
 
     @skygear.op("chat:get_conversation",
                 auth_required=True, user_required=True)

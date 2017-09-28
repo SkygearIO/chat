@@ -58,7 +58,7 @@ class UserConversation(ChatRecord):
                (not check_is_admin or record['is_admin'])
 
     @classmethod
-    def fetch_all_with_paging(cls, page, page_size):
+    def fetch_all_with_paging(cls, page, page_size, order='desc'):
         database = cls._get_database()
         offset = (page - 1) * page_size
         query_result = database.query(
@@ -66,7 +66,8 @@ class UserConversation(ChatRecord):
                              predicate=Predicate(user__eq=current_user_id()),
                              offset=offset,
                              limit=page_size,
-                             include=["conversation", "user"]))
+                             include=["conversation", "user"])
+                       .add_order('_created_at', order))
         return [uc for uc in query_result]
 
     @classmethod
