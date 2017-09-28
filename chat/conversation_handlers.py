@@ -8,8 +8,9 @@ from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .conversation import Conversation
-from .exc import (NotAdminConversationException, NotInConversationException,
-                  NotSupportedException, SkygearChatException)
+from .exc import (InvalidArgumentException, NotAdminConversationException,
+                  NotInConversationException, NotSupportedException,
+                  SkygearChatException)
 from .message import Message
 from .pubsub import _publish_record_event
 from .roles import RolesHelper
@@ -277,8 +278,12 @@ def handle_delete_conversation_lambda(conversation_id):
 
 
 def handle_create_conversation_lambda(participants, title, meta, options):
-    participants = [p if isinstance(p, str) else
-                    User.deserialize(p).id.key for p in participants]
+    try:
+        participants = [p if isinstance(p, str) else
+                        User.deserialize(p).id.key for p in participants]
+    except Exception:
+        raise InvalidArgumentException('Invalid users.', participants)
+
     if options is None:
         options = {}
     user_id = current_user_id()
