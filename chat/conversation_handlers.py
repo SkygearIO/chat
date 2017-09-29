@@ -193,13 +193,16 @@ def register_conversation_hooks(settings):
         if original_record is None:
             check_if_context_has_master_key(
                     "Call chat:create_conversation instead")
-        allowed_keys = ['title', 'metadata', 'distinct_by_participants']
-        keys_to_be_removed = [key
-                              for key in record
-                              if not key.startswith('_') and
-                              key not in allowed_keys]
-        for key in keys_to_be_removed:
-            del record[key]
+        disallowed_keys = ['last_read_message_ref',
+                           'last_message',
+                           'admin_ids',
+                           'last_read_message',
+                           'unread_count',
+                           'last_message_ref',
+                           'participant_ids']
+        for key in disallowed_keys:
+            if key in record:
+                del record[key]
 
     @skygear.before_delete("conversation", async=False)
     def conversation_before_delete_handler(record, conn):
