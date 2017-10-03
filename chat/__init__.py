@@ -22,11 +22,5 @@ def includeme(settings):
 
 
 parser = SettingsParser('SKYGEAR_CHAT')
-parser.add_setting('asset_store_url_prefix',
-                   default='http://localhost:3000/',
-                   env_var='ASSET_STORE_URL_PREFIX')
-parser.add_setting('asset_store_secret',
-                   default='',
-                   env_var='ASSET_STORE_SECRET')
 
 add_parser('chat', parser)
