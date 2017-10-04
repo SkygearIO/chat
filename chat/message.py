@@ -37,7 +37,8 @@ class Message(ChatRecord):
                 SELECT receipt.user, read_at, delivered_at
                 FROM %(schema_name)s.receipt
                 WHERE
-                    "message" = %(message_id)s
+                    "message" = %(message_id)s AND
+                    (read_at IS NOT NULL or delivered_at is NOT NULL)
                 ''', {
                     'schema_name': AsIs(_get_schema_name()),
                     'message_id': self.id.key

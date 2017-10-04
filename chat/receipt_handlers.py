@@ -1,5 +1,4 @@
 import logging
-from collections import Counter
 
 from psycopg2.extensions import AsIs
 
@@ -74,127 +73,6 @@ def __validate_current_user_in_messages(messages, user_id):
             raise NotInConversationException()
 
 
-def __update_and_notify_unread_messages(messages, conn):
-    for message in messages:
-        message.updateMessageStatus(conn)
-        message.notifyParticipants()
-
-
-def __update_user_conversations(unread_counter, last_read_messages, conn):
-    """
-    Update user conversation table based on un-read counts and
-    last read messages
-    """
-    user_id = current_user_id()
-    schema_name = AsIs(_get_schema_name())
-    for key in unread_counter:
-        delta = unread_counter[key]
-        if delta == 0:
-            continue
-        conn.execute('''
-            UPDATE %(schema_name)s.user_conversation
-            SET
-                "unread_count" = "unread_count" - %(delta)s,
-                "_updated_at" = CURRENT_TIMESTAMP
-            WHERE
-                "conversation" = %(conversation_id)s
-                AND "user" != %(user_id)s
-        ''', {
-            'schema_name': schema_name,
-            'conversation_id': key,
-            'user_id': user_id,
-            'delta': delta
-        })
-        print("updating unread count for user=%s,conversation=%s,delta=%d"
-              % (user_id, key, delta))
-
-    for key in last_read_messages:
-        m = last_read_messages[key]
-        conn.execute('''
-            WITH last_read_message_id AS(
-                SELECT last_read_message AS id FROM
-                %(schema_name)s.user_conversation uc
-                WHERE uc.user = %(user_id)s
-                AND uc.conversation = %(conversation_id)s),
-            message_seq AS (
-                SELECT seq FROM %(schema_name)s.message
-                WHERE _id IN (SELECT id FROM last_read_message_id)
-            )
-            UPDATE %(schema_name)s.user_conversation uc SET
-                last_read_message = CASE WHEN
-                    %(seq)s < (SELECT seq FROM message_seq LIMIT 1)
-                THEN
-                    last_read_message
-                ELSE
-                    %(new_id)s
-                END
-            WHERE uc.user = %(user_id)s
-            AND uc.conversation = %(conversation_id)s
-        ''', {
-            'schema_name': schema_name,
-            'conversation_id': key,
-            'user_id': user_id,
-            'seq': m['seq'],
-            'new_id': m.id.key
-        })
-        print("updating last_read_message in user=%s,conversation=%s"
-              % (user_id, key))
-
-
-def __update_last_read_messages(last_read_messages, message, key):
-    last_read_message = last_read_messages.get(key, None)
-    if last_read_message is None:
-        last_read_message = message
-    if message['seq'] > last_read_message['seq']:
-        last_read_message = message
-    last_read_messages[key] = last_read_message
-
-
-def __get_messages_receipts(messages, user_id):
-    output = []
-    found_receipts = Receipt.\
-        fetch_all_by_messages_and_user_id(messages, user_id)
-    found_receipts = {x.id.key: x for x in found_receipts}
-
-    for message in messages:
-        message_id = message.id.key
-        receipt_id = Receipt.consistent_id(user_id, message_id)
-        receipt = found_receipts.get(receipt_id, None)
-        if receipt is None:
-            receipt = Receipt.new(user_id, message_id)
-        output.append((message, receipt))
-    return output
-
-
-def __process_message_receipts(tuples, mark_delivered, mark_read):
-    new_receipts = []
-    unread_messages = []
-    unread_counter = Counter()
-    last_read_messages = {}
-    for message, receipt in tuples:
-        should_mark_delivered = mark_delivered and\
-            (not receipt.is_delivered())
-        should_mark_read = mark_read and\
-            (not receipt.is_read())
-
-        if should_mark_delivered:
-            receipt.mark_as_delivered()
-        if should_mark_read:
-            receipt.mark_as_read()
-            key = message.conversation_id
-            unread_counter[key] += 1
-            __update_last_read_messages(last_read_messages, message, key)
-
-            print("new receipt,message_id=%s" %
-                  (message.id.key))
-
-        if should_mark_read or should_mark_delivered:
-            new_receipts.append(receipt)
-            unread_messages.append(message)
-
-    return unread_messages, unread_counter, last_read_messages, new_receipts
-
-
 def mark_messages(message_ids, mark_delivered, mark_read):
     """
     Check the receipt before saving.
@@ -203,20 +81,150 @@ def mark_messages(message_ids, mark_delivered, mark_read):
     user_id = current_user_id()
     messages = Message.fetch_all(message_ids)
     __validate_current_user_in_messages(messages, user_id)
-    print("number of messages=%d" % (len(messages)))
 
-    tuples = __get_messages_receipts(messages, user_id)
-    unread_messages, unread_counter, last_read_messages, new_receipts = \
-        __process_message_receipts(tuples,
-                                   mark_delivered,
-                                   mark_read)
+    new_message_ids = []
 
-    print("number of new receipts=%d" % (len(new_receipts)))
-    Receipt.save_all(new_receipts)
+    receipts = [Receipt.new(current_user_id(), message_id)
+                for message_id in message_ids]
+    Receipt.save_all(receipts)
+
+    if mark_delivered:
+        new_message_ids += mark_messages_as_delivered(message_ids)
+
+    if mark_read:
+        new_message_ids += mark_messages_as_read(message_ids)
+
+    new_message_ids = list(set(new_message_ids))
+
+    __update_and_notify_messages(new_message_ids)
+
+
+def mark_messages_as_delivered(message_ids):
+    undelivered_messages = []
+    schema_name = AsIs(_get_schema_name())
+    user_id = current_user_id()
+    with db.conn() as conn:
+        for message_id in message_ids:
+            cur = conn.execute('''
+                WITH undelivered_receipt AS (
+                    SELECT r._id AS _id, r.message AS message_id
+                    FROM %(schema_name)s.receipt r
+                    WHERE r.message = %(message_id)s
+                    AND r.user = %(user_id)s
+                    AND delivered_at IS NULL LIMIT 1
+                ),
+                update_delivered_at AS (
+                    UPDATE %(schema_name)s.receipt
+                    SET delivered_at = NOW()
+                    FROM undelivered_receipt
+                    WHERE receipt._id = undelivered_receipt._id
+                )
+                SELECT message_id
+                FROM undelivered_receipt
+                ''', {
+                    'schema_name': schema_name,
+                    'user_id': user_id,
+                    'message_id': message_id
+            })
+            row = cur.fetchone()
+            if row is not None:
+                undelivered_messages.append(row[0])
+    return undelivered_messages
+
+
+def mark_messages_as_read(message_ids):
+    schema_name = AsIs(_get_schema_name())
+    user_id = current_user_id()
+    unread_message_ids = []
 
     with db.conn() as conn:
-        __update_user_conversations(unread_counter, last_read_messages, conn)
-        __update_and_notify_unread_messages(unread_messages, conn)
+        for message_id in message_ids:
+            cur = conn.execute('''
+                WITH unread_receipt AS (
+                    SELECT r._id AS _id, r.message AS message_id
+                    FROM %(schema_name)s.receipt r
+                    WHERE r.message = %(message_id)s
+                    AND r.user = %(user_id)s
+                    AND read_at IS NULL LIMIT 1
+                ),
+                this_message AS (
+                    SELECT message.conversation, message.seq, message._id
+                    FROM %(schema_name)s.message, unread_receipt
+                    WHERE message._id = unread_receipt.message_id
+                    LIMIT 1
+                ),
+                last_read_message AS(
+                    SELECT last_read_message AS _id
+                    FROM %(schema_name)s.user_conversation uc,
+                         this_message
+                    WHERE uc.user = %(user_id)s
+                    AND uc.conversation = this_message.conversation
+                    LIMIT 1
+                )
+                ,last_read_message_seq AS (
+                    SELECT message.seq
+                    FROM %(schema_name)s.message,
+                         last_read_message
+                    WHERE message._id = last_read_message._id
+                    LIMIT 1
+                ),
+                update_last_read_message AS (
+                    UPDATE %(schema_name)s.user_conversation uc
+                    SET last_read_message =
+                    CASE WHEN
+                        this_message.seq > last_read_message_seq.seq
+                    THEN
+                        this_message._id
+                    ELSE
+                        last_read_message._id
+                    END
+                    FROM this_message,
+                         last_read_message_seq,
+                         last_read_message
+                    WHERE uc.user = %(user_id)s
+                    AND uc.conversation = this_message.conversation
+                ),
+                update_read_at AS (
+                    UPDATE %(schema_name)s.receipt
+                    SET read_at = NOW()
+                    FROM unread_receipt
+                    WHERE receipt._id = unread_receipt._id
+                ),
+                update_unread_count AS (
+                    UPDATE %(schema_name)s.user_conversation uc
+                    SET unread_count =
+                    CASE WHEN
+                        unread_count <= 0
+                    THEN
+                        0
+                    ELSE
+                        unread_count - 1
+                    END
+                    FROM unread_receipt,
+                         this_message
+                    WHERE uc.user = %(user_id)s
+                    AND uc.conversation = this_message.conversation
+                )
+                SELECT message_id
+                FROM unread_receipt
+            ''', {
+                'schema_name': schema_name,
+                'user_id': user_id,
+                'message_id': message_id
+            })
+            row = cur.fetchone()
+            if row is not None:
+                unread_message_ids.append(row[0])
+
+    return unread_message_ids
+
+
+def __update_and_notify_messages(message_ids):
+    messages = Message.fetch_all(message_ids)
+    with db.conn() as conn:
+        for message in messages:
+            message.updateMessageStatus(conn)
+            message.notifyParticipants()
 
 
 def handle_get_receipt(message_id):
