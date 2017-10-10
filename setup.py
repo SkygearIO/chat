@@ -32,7 +32,7 @@ class PyTest(TestCommand):
 
 setup(
       name='skygear_chat',
-      version='0.1.0',
+      version='1.1.0',
       packages=find_packages(),
       description='Chat Plugin for Skygear',
       long_description=open(README).read(),
@@ -42,7 +42,7 @@ setup(
       url='https://github.com/SkygearIO/chat',
       license='Apache License, Version 2.0',
       install_requires=[
-            'skygear>=0.16.0',
+            'skygear>=1.1.0',
       ],
       cmdclass= {'test': PyTest},
       tests_require=[
