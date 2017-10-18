@@ -166,7 +166,7 @@ def register_message_hooks(settings):
         return handle_message_after_save(record, original_record, conn)
 
     @skygear.before_delete("message", async=False)
-    def message_before_delete_handler(record, original_record, conn):
+    def message_before_delete_handler(record, conn):
         raise NotSupportedException()
 
 
