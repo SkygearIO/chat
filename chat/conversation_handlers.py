@@ -8,9 +8,9 @@ from skygear.utils import db
 from skygear.utils.context import current_user_id
 
 from .conversation import Conversation
-from .exc import (InvalidArgumentException, NotAdminConversationException,
-                  NotInConversationException, NotSupportedException,
-                  SkygearChatException)
+from .exc import (ConversationAlreadyExistsException, InvalidArgumentException,
+                  NotAdminConversationException, NotInConversationException,
+                  NotSupportedException, SkygearChatException)
 from .message import Message
 from .pubsub import _publish_record_event
 from .roles import RolesHelper
@@ -29,10 +29,10 @@ def __validate_user_is_admin(conversation_id):
 
 
 def __validate_conversation(participants):
-    valid = True
+    first_row = None
     with db.conn() as conn:
         result = conn.execute("""
-                              SELECT 1 FROM
+                              SELECT c._id FROM
                                 %(schema_name)s.conversation AS c
                                 WHERE
                                     c.distinct_by_participants = TRUE
@@ -49,11 +49,10 @@ def __validate_conversation(participants):
                               """, {'schema_name': AsIs(_get_schema_name()),
                                     'user_ids': tuple(participants),
                                     'count': len(participants)})
-
-        valid = result.first() is None
+        first_row = result.first()
+    valid = first_row is None
     if not valid:
-        raise SkygearChatException(
-            "Conversation with the participants already exists")
+        raise ConversationAlreadyExistsException(first_row[0])
 
 
 def __update_roles(container, users, role, flag):

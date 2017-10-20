@@ -11,6 +11,15 @@ class SkygearChatException(SkygearException):
     pass
 
 
+class ConversationAlreadyExistsException(SkygearException):
+    def __init__(self, conversation_id):
+        super().__init__(
+            "Conversation with the participants already exists",
+            InvalidArgument,
+            {'conversation_id': conversation_id}
+        )
+
+
 class NotInConversationException(SkygearChatException):
     def __init__(self):
         super().__init__(
