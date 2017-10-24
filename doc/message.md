@@ -77,3 +77,46 @@ need it.)
 This API is intended for querying individual message receipts. If you are
 looking for display individual user read til which message. Please check out
 `UserConversation` section.
+
+# Message Types
+
+In android and iOS chat UIKit, following message types are supported.
+
+## Text message
+
+```
+- body (string)
+    text message content
+- metadata (json)
+    empty
+- attachment (Skygear Asset)
+    empty
+```
+
+## Image message
+
+```
+- body (string)
+    empty
+- metadata (json)
+    {
+        "width": {number of px},
+        "height": {number of px},
+        "thumbnail": {base64 encoded image}
+    }
+- attachment (Skygear Asset)
+    downsampled image in image/jpeg format with 1600px max width
+```
+
+## Voice message
+
+```
+- body (string)
+    empty
+- metadata (json)
+    {
+        "length": {number of millisecond}
+    }
+- attachment (Skygear Asset)
+    soundtrack in audio/m4a format
+```
