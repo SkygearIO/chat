@@ -102,10 +102,10 @@ In android and iOS chat UIKit, following message types are supported.
     {
         "width": {number of px},
         "height": {number of px},
-        "thumbnail": {base64 encoded image}
+        "thumbnail": {base64 encoded image in image/jpeg or image/png with 80px max width}
     }
 - attachment (Skygear Asset)
-    downsampled image in image/jpeg format with 1600px max width
+    downsampled image in image/jpeg or image/png format with 1600px max width
 ```
 
 ## Voice message
