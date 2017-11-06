@@ -19,11 +19,13 @@ from .utils import _get_schema_name
 
 
 def get_messages(conversation_id, limit, before_time=None,
-                 before_message_id=None, order=None):
+                 before_message_id=None, after_time=None,
+                 after_message_id=None, order=None):
     if not Conversation.exists(conversation_id):
         raise ConversationNotFoundException()
     messages = Message.fetch_all_by_conversation_id(
-               conversation_id, limit, before_time, before_message_id, order)
+               conversation_id, limit, before_time, before_message_id,
+               after_time, after_message_id, order)
     return {'results': [serialize_record(message) for message in messages]}
 
 
@@ -175,9 +177,12 @@ def register_message_lambdas(settings):
     @skygear.op("chat:get_messages", auth_required=True, user_required=True)
     def get_messages_lambda(conversation_id, limit,
                             before_time=None, before_message_id=None,
+                            after_time=None, after_message_id=None,
                             order=None):
         return get_messages(conversation_id, limit,
-                            before_time, before_message_id, order)
+                            before_time, before_message_id,
+                            after_time, after_message_id,
+                            order)
 
     @skygear.op("chat:delete_message", auth_required=True, user_required=True)
     def delete_message_lambda(message_id):
