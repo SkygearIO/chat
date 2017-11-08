@@ -111,11 +111,12 @@ class Message(ChatRecord):
 
     @classmethod
     def fetch_all_by_conversation_id(cls, conversation_id, limit,
-                                     before_time, before_message_id,
-                                     after_time, after_message_id, order):
+                                     before_time=None, before_message_id=None,
+                                     after_time=None, after_message_id=None,
+                                     order=None, deleted=False):
         database = cls._get_database()
         predicate = Predicate(conversation__eq=conversation_id,
-                              deleted__eq=False)
+                              deleted__eq=deleted)
         if before_time is not None:
             predicate = predicate & Predicate(_created_at__lt=before_time)
         if before_message_id is not None:

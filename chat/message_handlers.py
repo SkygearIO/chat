@@ -10,6 +10,7 @@ from skygear.utils.context import current_user_id
 
 from .conversation import Conversation
 from .exc import (AlreadyDeletedException, ConversationNotFoundException,
+                  InvalidGetMessagesConditionArgumentException,
                   MessageNotFoundException, NotInConversationException,
                   NotSupportedException)
 from .message import Message
@@ -18,15 +19,51 @@ from .user_conversation import UserConversation
 from .utils import _get_schema_name
 
 
-def get_messages(conversation_id, limit, before_time=None,
-                 before_message_id=None, after_time=None,
-                 after_message_id=None, order=None):
+def get_messages(conversation_id, limit,
+                 before_time=None, before_message_id=None,
+                 after_time=None, after_message_id=None,
+                 order=None):
     if not Conversation.exists(conversation_id):
         raise ConversationNotFoundException()
+
+    # use message id if given message id as the range condition,
+    # otherwise use time as range condition
+    #
+    # thus if neither message id or time is given, this will return the
+    # latest messages
+    if before_message_id or after_message_id:
+        if before_time or after_time:
+            raise InvalidGetMessagesConditionArgumentException()
+
+        return get_messages_by_message(conversation_id, limit,
+                                       before_message_id, after_message_id,
+                                       order)
+    else:
+        return get_messages_by_time(conversation_id, limit,
+                                    before_time, after_time, order)
+
+
+def get_messages_by_message(conversation_id, limit,
+                            before_message_id=None, after_message_id=None,
+                            order=None):
+    output = {}
     messages = Message.fetch_all_by_conversation_id(
-               conversation_id, limit, before_time, before_message_id,
-               after_time, after_message_id, order)
-    return {'results': [serialize_record(message) for message in messages]}
+               conversation_id, limit,
+               before_message_id=before_message_id,
+               after_message_id=after_message_id,
+               order=order)
+    output['results'] = [serialize_record(message) for message in messages]
+    return output
+
+
+def get_messages_by_time(conversation_id, limit,
+                         before_time=None, after_time=None, order=None):
+    output = {}
+    messages = Message.fetch_all_by_conversation_id(
+               conversation_id, limit,
+               before_time=before_time, after_time=after_time, order=order)
+    output['results'] = [serialize_record(message) for message in messages]
+    return output
 
 
 def handle_message_before_save(record, original_record, conn):
