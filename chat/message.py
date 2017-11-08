@@ -134,12 +134,11 @@ class Message(ChatRecord):
         result = database.query(query)
 
         # remove deleted message content
-        if include_deleted:
+        if deleted:
             for message in result:
                 if message['deleted']:
                     Message.clear_message_content(message)
         return result
-
 
     @classmethod
     def fetch_all_by_conversation_id_and_seq(cls,
