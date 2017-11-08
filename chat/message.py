@@ -131,7 +131,15 @@ class Message(ChatRecord):
         if order != 'edited_at':
             order = '_created_at'
         query.add_order(order, 'desc')
-        return database.query(query)
+        result = database.query(query)
+
+        # remove deleted message content
+        if include_deleted:
+            for message in result:
+                if message['deleted']:
+                    Message.clear_message_content(message)
+        return result
+
 
     @classmethod
     def fetch_all_by_conversation_id_and_seq(cls,
@@ -147,3 +155,17 @@ class Message(ChatRecord):
 
         query = Query('message', predicate=predicate, limit=None)
         return database.query(query)
+
+    @classmethod
+    def clear_message_content(cls, message):
+        keys_to_delete = [
+            'message_status',
+            'body',
+            'meta_data',
+            'attachment',
+            'revision'
+        ]
+
+        for key in keys_to_delete:
+            message[key] = None
+            del message[key]
