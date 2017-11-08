@@ -53,6 +53,21 @@ def get_messages_by_message(conversation_id, limit,
                after_message_id=after_message_id,
                order=order)
     output['results'] = [serialize_record(message) for message in messages]
+
+    # include deleted messages in a separate array
+    no_limit = 999999
+    if not before_message_id:
+        before_message_id = messages[0].id.key
+    if not after_message_id:
+        after_message_id = messages[len(messages) - 1].id.key
+
+    deleted_messages = Message.fetch_all_by_conversation_id(
+        conversation_id, no_limit,
+        before_message_id=before_message_id, after_message_id=after_message_id,
+        order=order, deleted=True
+    )
+    output['deleted'] = \
+        [serialize_record(message) for message in deleted_messages]
     return output
 
 
@@ -63,6 +78,21 @@ def get_messages_by_time(conversation_id, limit,
                conversation_id, limit,
                before_time=before_time, after_time=after_time, order=order)
     output['results'] = [serialize_record(message) for message in messages]
+
+    # include deleted messages in a separate array
+    no_limit = 999999
+    if not before_time:
+        before_time = serialized_messages[0]['_created_at']
+    if not after_time:
+        after_time = serialized_messages[len(messages) - 1]['_created_at']
+
+    deleted_messages = Message.fetch_all_by_conversation_id(
+        conversation_id, no_limit,
+        before_time=before_time, after_time=after_time, order=order,
+        deleted=True
+    )
+    output['deleted'] = \
+        [serialize_record(message) for message in deleted_messages]
     return output
 
 
