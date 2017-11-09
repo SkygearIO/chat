@@ -60,6 +60,14 @@ class AlreadyDeletedException(SkygearChatException):
         )
 
 
+class InvalidGetMessagesConditionArgumentException(SkygearChatException):
+    def __init__(self):
+        super().__init__(
+            "cannot use both message_id and time to filter",
+            InvalidArgument
+        )
+
+
 class NotSupportedException(SkygearChatException):
     def __init__(self, message=None):
         message = message or "This operation is not supported."
