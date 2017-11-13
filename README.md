@@ -155,15 +155,15 @@ __Receipt__
 
 For API detail, please visit the platform specific API filie:
 
-- [JS SDK](https://doc.esdoc.org/github.com/skygeario/chat-SDK-JS/)
-- [iOS SDK](http://cocoadocs.org/docsets/SKYKitChat/)
-- [Android SDK](https://docs.skygear.io/android/plugins/chat/reference/)
+- [JS SDK](https://docs.skygear.io/js/chat/reference/latest/)
+- [iOS SDK](https://docs.skygear.io/ios/chat/reference/latest/)
+- [Android SDK](https://docs.skygear.io/android/chat/reference/latest/)
 - [Skygear.io](https://skygear.io)
 
 [er]: https://github.com/SkygearIO/chat/raw/master/doc/er.png "ER diagram"
-[js-quick-start]: https://docs.skygear.io/guides/chat-quick-start/js/
-[android-quick-start]: https://docs.skygear.io/guides/chat-quick-start/android/
-[ios-quick-start]: https://docs.skygear.io/guides/chat-quick-start/ios/
+[js-quick-start]: https://docs.skygear.io/guides/chat/quick-start/js/
+[android-quick-start]: https://docs.skygear.io/guides/chat/quick-start/android/
+[ios-quick-start]: https://docs.skygear.io/guides/chat/quick-start/ios/
 [js-basic]: https://docs.skygear.io/guides/chat/basics/js/
 [android-basic]: https://docs.skygear.io/guides/chat/basics/android/
 [ios-basic]: https://docs.skygear.io/guides/chat/basics/ios/
