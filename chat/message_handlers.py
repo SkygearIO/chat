@@ -217,7 +217,7 @@ def _update_user_conversation_last_read_message(conn, last_message,
     ''', {
         'schema_name': AsIs(_get_schema_name()),
         'new_last_message_id': new_last_message_id,
-        'old_last_message_id': last_message.key
+        'old_last_message_id': last_message.id.key
     })
 
 
