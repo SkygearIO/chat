@@ -11,6 +11,11 @@ from .conversation import Conversation
 from .exc import (ConversationAlreadyExistsException, InvalidArgumentException,
                   NotAdminConversationException, NotInConversationException,
                   NotSupportedException, SkygearChatException)
+from .hooks import (send_after_conversation_created_hook,
+                    send_after_conversation_deleted_hook,
+                    send_after_conversation_updated_hook,
+                    send_after_users_added_to_conversation_hook,
+                    send_after_users_removed_from_conversation_hook)
 from .message import Message
 from .pubsub import _publish_record_event
 from .roles import RolesHelper
@@ -142,8 +147,13 @@ def handle_add_participants(conversation_id,
     for participant_id in participant_ids:
         UserConversation.new(conversation, participant_id).save()
 
+    serialized_conversation = serialize_record(conversation)
+
     if not is_first_time:
         conversation.mark_non_distinct()
+        send_after_users_added_to_conversation_hook(serialized_conversation,
+                                                    existing_participants,
+                                                    participant_ids)
 
     conversation = Conversation.fetch_one(conversation_id)
     existing_participants = conversation['participant_ids']
@@ -151,7 +161,7 @@ def handle_add_participants(conversation_id,
                  existing_participants,
                  [],
                  participant_ids)
-    return {'conversation': serialize_record(conversation)}
+    return {'conversation': serialized_conversation}
 
 
 def handle_remove_participants(conversation_id, participant_ids):
@@ -167,11 +177,17 @@ def handle_remove_participants(conversation_id, participant_ids):
     conversation.mark_non_distinct()
 
     conversation = Conversation.fetch_one(conversation_id, with_uc=False)
+    serialized_conversation = serialize_record(conversation)
     notify_users(conversation,
                  conversation['participant_ids'],
                  participant_ids,
                  [])
-    return {'conversation': serialize_record(conversation)}
+
+    new_participant_ids = serialized_conversation['participant_ids']
+    send_after_users_removed_from_conversation_hook(serialized_conversation,
+                                                    new_participant_ids,
+                                                    participant_ids)
+    return {'conversation': serialized_conversation}
 
 
 def handle_admins_lambda(conversation_id, admin_ids, flag):
@@ -203,6 +219,16 @@ def register_conversation_hooks(settings):
         for key in disallowed_keys:
             if key in record:
                 del record[key]
+
+    @skygear.after_save('conversation', async=True)
+    def conversation_after_save_handler(record, original_record, db):
+        if original_record is not None:
+            conversation = Conversation.fetch_one(original_record.id.key)
+            if not Conversation.equal_record(record, original_record):
+                serialized_conversation = serialize_record(conversation)
+                participants = serialized_conversation['participant_ids']
+                send_after_conversation_updated_hook(serialized_conversation,
+                                                     participants)
 
     @skygear.before_delete("conversation", async=False)
     def conversation_before_delete_handler(record, conn):
@@ -279,6 +305,10 @@ def handle_delete_conversation_lambda(conversation_id):
     handle_admins_lambda(conversation_id, conversation['admin_ids'], False)
     handle_remove_participants(conversation_id,
                                conversation['participant_ids'])
+    serialized_conversation = serialize_record(conversation)
+    participants = list(set(serialized_conversation['admin_ids'] +
+                            serialized_conversation['participant_ids']))
+    send_after_conversation_deleted_hook(serialized_conversation, participants)
     return None
 
 
@@ -313,8 +343,12 @@ def handle_create_conversation_lambda(participants, title, meta, options):
     handle_add_participants(conversation_id, participants, True)
     handle_admins_lambda(conversation_id, admins, True)
     conversation['admin_ids'] = admins
+    participants = list(set(participants + admins))
     conversation['participant_ids'] = list(set(participants + admins))
-    return {'conversation': serialize_record(conversation)}
+    serialized_conversation = serialize_record(conversation)
+    send_after_conversation_created_hook(serialized_conversation,
+                                         participants)
+    return {'conversation': serialized_conversation}
 
 
 def register_conversation_lambdas(settings):

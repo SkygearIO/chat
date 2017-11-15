@@ -19,6 +19,15 @@ class Conversation(ChatRecord):
                         'distinct_by_participants': True}])
 
     @classmethod
+    def equal_record(cls, record1, record2):
+        keys = ['distinct_by_participants', 'title', 'meta']
+        for key in keys:
+            if ((key in record1) != (key in record2)) or \
+               (key in record1 and record1[key] != record2[key]):
+                return False
+        return True
+
+    @classmethod
     def new(cls, conversation_id, user_id):
         return Conversation(RecordID(cls.record_type, conversation_id),
                             user_id,
