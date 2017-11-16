@@ -30,10 +30,3 @@ def includeme(settings):
 parser = SettingsParser('SKYGEAR_CHAT')
 
 add_parser('chat', parser)
-__all__ = [after_conversation_created,
-           after_conversation_deleted,
-           after_conversation_updated, after_message_deleted,
-           after_message_sent, after_message_updated,
-           after_users_added_to_conversation,
-           after_users_removed_from_conversation,
-           typing_started]

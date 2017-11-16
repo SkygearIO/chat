@@ -10,6 +10,12 @@ from ..exc import SkygearChatException
 from ..message_handlers import handle_message_after_save
 
 
+def get_mock_conversation():
+    c = Conversation.new('1', 'user1')
+    c['participant_ids'] = []
+    return c
+
+
 class TestHandleMessageAfterSave(unittest.TestCase):
 
     def setUp(self):
@@ -55,6 +61,8 @@ class TestHandleMessageAfterSave(unittest.TestCase):
     @patch('chat.message._publish_record_event')
     @patch('chat.message_handlers._get_schema_name', Mock(return_value='app_dev'))
     @patch('chat.message.UserConversation.fetch_one', Mock(return_value=None))
+    @patch('chat.message_handlers.Conversation.fetch_one', Mock(return_value=get_mock_conversation()))
+    @patch('chat.message_handlers.send_after_message_sent_hook', Mock())
     def test_publish_event_count(self, mock_publish_event):
         conn = Mock()
         handle_message_after_save(self.record(), None, conn)
