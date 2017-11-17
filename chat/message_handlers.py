@@ -13,6 +13,9 @@ from .exc import (AlreadyDeletedException, ConversationNotFoundException,
                   InvalidGetMessagesConditionArgumentException,
                   MessageNotFoundException, NotInConversationException,
                   NotSupportedException)
+from .hooks import (send_after_message_deleted_hook,
+                    send_after_message_sent_hook,
+                    send_after_message_updated_hook)
 from .message import Message
 from .message_history import MessageHistory
 from .user_conversation import UserConversation
@@ -150,10 +153,9 @@ def handle_message_after_save(record, original_record, conn):
         event_type = 'delete'
 
     message.notifyParticipants(event_type)
-
+    conversation_id = message.conversation_id
     if original_record is None:
         # Update all UserConversation unread count by 1
-        conversation_id = message.conversation_id
         conn.execute('''
             UPDATE %(schema_name)s.user_conversation
             SET
@@ -176,6 +178,19 @@ def handle_message_after_save(record, original_record, conn):
             'conversation_id': conversation_id,
             'message_id': record.id.key
         })
+
+    conversation = serialize_record(Conversation.fetch_one(conversation_id))
+    serialized_message = serialize_record(record)
+    participant_ids = conversation['participant_ids']
+
+    if original_record is None:
+        send_after_message_sent_hook(serialized_message,
+                                     conversation,
+                                     participant_ids)
+    else:
+        send_after_message_updated_hook(serialized_message,
+                                        conversation,
+                                        participant_ids)
 
 
 def _get_new_last_message_id(conn, message):
@@ -241,6 +256,13 @@ def delete_message(message_id):
                                           new_last_message_id)
         _update_user_conversation_last_read_message(conn, message,
                                                     new_last_message_id)
+
+    serialized_conversation = serialize_record(conversation)
+    participant_ids = serialized_conversation['participant_ids']
+    serialized_message = serialize_record(record)
+    send_after_message_deleted_hook(serialized_message,
+                                    serialized_conversation,
+                                    participant_ids)
     return record
 
 

@@ -3,11 +3,12 @@ from datetime import datetime
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 import skygear
-from skygear.transmitter.encoding import _RecordEncoder
+from skygear.transmitter.encoding import _RecordEncoder, serialize_record
 from skygear.utils.context import current_user_id
 
 from .conversation import Conversation
 from .exc import SkygearChatException
+from .hooks import send_typing_started_hook
 from .pubsub import _publish_event
 
 
@@ -50,4 +51,9 @@ def register_typing_lambda(settings):
         except ValueError:
             raise SkygearChatException('Event time is not in correct format')
         c = Conversation.fetch_one(conversation_id)
+        serialized_conversation = serialize_record(c)
+        participant_ids = serialized_conversation['participant_ids']
+        send_typing_started_hook(serialized_conversation,
+                                 participant_ids,
+                                 evt)
         return publish_typing(c, evt, dt)
