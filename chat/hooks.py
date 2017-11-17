@@ -31,8 +31,7 @@ from .utils import _get_container
 
 def __send_hook(name, params):
     container = _get_container()
-    print(name)
-    print(container.send_action(name, {'args': params}))
+    container.send_action(name, {'args': params})
 
 
 def __get_users_by_user_ids(user_ids):
@@ -41,7 +40,6 @@ def __get_users_by_user_ids(user_ids):
     predicate = Predicate(_id__in=user_ids)
     query = Query('user', predicate=predicate, limit=10000)
     users = database.query(query)
-    print(users)
     return [serialize_record(u) for u in users]
 
 
