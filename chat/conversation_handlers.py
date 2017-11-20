@@ -266,7 +266,7 @@ def handle_get_conversation_lambda(conversation_id, include_last_message):
     if conversation is None:
         raise SkygearChatException("Conversation not found.")
 
-    if None and include_last_message:
+    if include_last_message:
         message_refs = __get_messsage_refs_from_conversation(conversation)
         messages = Message.fetch_all(message_refs)
         messages = {message.id.key: serialize_record(message)
