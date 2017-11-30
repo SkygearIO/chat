@@ -8,6 +8,7 @@ from skygear.transmitter.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
+from .asset import sign_asset_url
 from .conversation import Conversation
 from .exc import (AlreadyDeletedException, ConversationNotFoundException,
                   InvalidGetMessagesConditionArgumentException,
@@ -20,6 +21,15 @@ from .message import Message
 from .message_history import MessageHistory
 from .user_conversation import UserConversation
 from .utils import _get_schema_name
+
+
+def __serialize_message_record(message):
+    output = serialize_record(message)
+    if 'attachment' in output:
+        output['attachment'] = output['attachment'].copy()
+        output['attachment']['$url'] = \
+            sign_asset_url(output['attachment']['$name'])
+    return output
 
 
 def get_messages(conversation_id, limit,
@@ -180,7 +190,7 @@ def handle_message_after_save(record, original_record, conn):
         })
 
     conversation = serialize_record(Conversation.fetch_one(conversation_id))
-    serialized_message = serialize_record(record)
+    serialized_message = __serialize_message_record(record)
     participant_ids = conversation['participant_ids']
 
     if original_record is None:
@@ -259,7 +269,7 @@ def delete_message(message_id):
 
     serialized_conversation = serialize_record(conversation)
     participant_ids = serialized_conversation['participant_ids']
-    serialized_message = serialize_record(record)
+    serialized_message = __serialize_message_record(record)
     send_after_message_deleted_hook(serialized_message,
                                     serialized_conversation,
                                     participant_ids)
