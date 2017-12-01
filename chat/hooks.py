@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from skygear.transmitter.encoding import serialize_record
+from skygear.encoding import serialize_record
 
 from .database import Database
 from .decorators import (AFTER_CONVERSATION_CREATED_HOOK,

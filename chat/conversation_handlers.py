@@ -3,7 +3,7 @@ from uuid import uuid4
 from psycopg2.extensions import AsIs
 
 import skygear
-from skygear.transmitter.encoding import serialize_record
+from skygear.encoding import serialize_record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 

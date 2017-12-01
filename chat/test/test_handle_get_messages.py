@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, call, patch
 
 from skygear.models import Record, RecordID
-from skygear.transmitter.encoding import deserialize_record
+from skygear.encoding import deserialize_record
 
 from ..conversation import Conversation
 from ..user_conversation import UserConversation

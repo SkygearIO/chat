@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from skygear.transmitter.encoding import deserialize_record
+from skygear.encoding import deserialize_record
 
 from ..pubsub import _publish_record_event
 

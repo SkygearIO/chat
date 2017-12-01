@@ -1,4 +1,4 @@
-from skygear.transmitter.encoding import serialize_record as skyserialize
+from skygear.encoding import serialize_record as skyserialize
 
 from .asset import sign_asset_url
 

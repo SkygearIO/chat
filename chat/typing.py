@@ -3,7 +3,7 @@ from datetime import datetime
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 import skygear
-from skygear.transmitter.encoding import _RecordEncoder, serialize_record
+from skygear.encoding import _RecordEncoder, serialize_record
 from skygear.utils.context import current_user_id
 
 from .conversation import Conversation
