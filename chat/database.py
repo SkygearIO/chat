@@ -30,7 +30,7 @@ class Database(object):
             arg = [arg]
 
         if len(arg) == 0:
-            return
+            return []
 
         records = [serialize_record(item)
                    if isinstance(item, Record) else item
