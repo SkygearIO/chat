@@ -28,6 +28,10 @@ class Database(object):
     def save(self, arg, atomic=False):
         if not isinstance(arg, list):
             arg = [arg]
+
+        if len(arg) == 0:
+            return {'result': []}
+
         records = [serialize_record(item)
                    if isinstance(item, Record) else item
                    for item in arg]
