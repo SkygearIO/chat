@@ -111,7 +111,7 @@ class Conversation(ChatRecord):
             participants[key] = []
         predicate = Predicate(conversation__in=list(set(conversation_ids)))
         query_result = database.query(
-                       Query(UserConversation.record_type, predicate=predicate)
+                       Query(UserConversation.record_type, predicate=predicate, limit=None)
                        )
         for row in query_result:
             conversation_id = row['conversation'].recordID.key
