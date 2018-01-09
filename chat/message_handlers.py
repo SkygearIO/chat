@@ -269,7 +269,7 @@ def delete_message(message_id):
 
     serialized_conversation = serialize_record(conversation)
     participant_ids = serialized_conversation['participant_ids']
-    serialized_message = __serialize_message_record(record)
+    serialized_message = __serialize_message_record(message)
     send_after_message_deleted_hook(serialized_message,
                                     serialized_conversation,
                                     participant_ids)
