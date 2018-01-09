@@ -323,8 +323,8 @@ def handle_create_conversation_lambda(participants, title, meta, options):
         options = {}
     user_id = current_user_id()
     admins = [user_id]
-    admins_from_options = [User.deserialize(a).id.key
-                           for a in options.get('admin_ids', [])]
+    admins_from_options = [a[5:] if a[:5] == 'user/'
+                           else a for a in options.get('adminIDs', [])]
     admins = list(set(admins + admins_from_options))
     participants = list(set(participants + admins))
 
