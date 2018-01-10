@@ -207,11 +207,15 @@ def _get_new_last_message_id(conn, message):
     # TODO rewrite with database.query
     cur = conn.execute('''
             SELECT _id FROM %(schema_name)s.message
-            WHERE deleted = false AND seq < %(seq)s
+            WHERE
+                deleted = false AND
+                seq < %(seq)s AND
+                conversation = %(conversation_id)s
             ORDER BY seq DESC LIMIT 1
         ''', {
             'schema_name': AsIs(_get_schema_name()),
-            'seq': message['seq']
+            'seq': message['seq'],
+            'conversation_id': message['conversation'].recordID.key
         })
     row = cur.fetchone()
     return None if row is None else row['_id']
@@ -229,7 +233,7 @@ def _update_conversation_last_message(conn, conversation, last_message,
         ''', {
             'schema_name': AsIs(_get_schema_name()),
             'conversation_id': conversation_id,
-            'new_last_message_id': 'message/' + new_last_message_id
+            'new_last_message_id': new_last_message_id
         })
 
 
@@ -269,7 +273,7 @@ def delete_message(message_id):
 
     serialized_conversation = serialize_record(conversation)
     participant_ids = serialized_conversation['participant_ids']
-    serialized_message = __serialize_message_record(record)
+    serialized_message = __serialize_message_record(message)
     send_after_message_deleted_hook(serialized_message,
                                     serialized_conversation,
                                     participant_ids)
