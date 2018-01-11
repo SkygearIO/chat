@@ -33,9 +33,9 @@ def __serialize_message_record(message):
 
 
 def get_messages(conversation_id, limit,
-                 before_time=None, before_message_id=None,
-                 after_time=None, after_message_id=None,
-                 order=None):
+                 before_time=None, order=None,
+                 before_message_id=None,
+                 after_time=None, after_message_id=None):
     if not Conversation.exists(conversation_id):
         raise ConversationNotFoundException()
 
