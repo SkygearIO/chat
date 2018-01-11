@@ -17,9 +17,7 @@ def _get_schema_name():
 
 
 def _get_channel_by_user_id(user_id):
-    if not _check_if_table_exists('user_channel'):
-        return None
-
+    # TODO: use database.query instead of raw SQL
     with db.conn() as conn:
         cur = conn.execute('''
             SELECT name

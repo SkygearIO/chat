@@ -61,6 +61,8 @@ def register_initialization_event_handlers(settings):
                                  Field('message', 'ref(message)'),
                                  Field('read_at', 'datetime'),
                                  Field('delivered_at', 'datetime')])
+        user_channel_schema = Schema('user_channel',
+                                     [Field('name', 'string')])
         message_schema = _message_schema()
         message_history_schema = _message_history_schema()
         schema_helper.create([user_schema,
@@ -68,5 +70,6 @@ def register_initialization_event_handlers(settings):
                               conversation_schema,
                               message_schema,
                               message_history_schema,
-                              receipt_schema],
+                              receipt_schema,
+                              user_channel_schema],
                              plugin_request=True)
