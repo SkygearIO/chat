@@ -17,7 +17,7 @@ def _get_schema_name():
 
 
 def _get_channel_by_user_id(user_id):
-    #TODO: use database.query instead of raw SQL
+    # TODO: use database.query instead of raw SQL
     with db.conn() as conn:
         cur = conn.execute('''
             SELECT name
