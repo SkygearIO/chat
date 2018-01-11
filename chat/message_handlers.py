@@ -297,9 +297,9 @@ def register_message_hooks(settings):
 def register_message_lambdas(settings):
     @skygear.op("chat:get_messages", auth_required=True, user_required=True)
     def get_messages_lambda(conversation_id, limit,
-                            before_time=None, before_message_id=None,
-                            after_time=None, after_message_id=None,
-                            order=None):
+                            before_time=None, order=None,
+                            before_message_id=None, after_time=None,
+                            after_message_id=None):
         return get_messages(conversation_id, limit,
                             before_time, before_message_id,
                             after_time, after_message_id,
