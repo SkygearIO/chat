@@ -37,20 +37,22 @@ def __validate_conversation(participants):
     first_row = None
     with db.conn() as conn:
         result = conn.execute("""
-                              SELECT c._id FROM
-                                %(schema_name)s.conversation AS c
-                                WHERE
-                                    c.distinct_by_participants = TRUE
-                                AND
-                                (
-                                    SELECT COUNT(DISTINCT uc.user)
-                                    FROM %(schema_name)s.user_conversation
-                                    AS uc
-                                    WHERE
-                                        uc.conversation = c._id
-                                    AND
-                                        uc.user IN %(user_ids)s
-                                ) = %(count)s
+                              SELECT c._id
+                                   FROM %(schema_name)s.conversation AS c
+                              WHERE c._id IN (
+                                  SELECT uc.conversation
+                                  FROM %(schema_name)s.user_conversation AS uc
+                                  WHERE uc.conversation IN (
+                                      SELECT uc.conversation
+                                      FROM %(schema_name)s.user_conversation
+                                      AS uc
+                                      WHERE uc.user IN %(user_ids)s
+                                      GROUP BY uc.conversation
+                                      HAVING
+                                          COUNT(DISTINCT uc.user) = %(count)s)
+                                  GROUP BY uc.conversation
+                                  HAVING COUNT(DISTINCT uc.user) = %(count)s)
+                              ORDER BY c._created_at DESC
                               """, {'schema_name': AsIs(_get_schema_name()),
                                     'user_ids': tuple(participants),
                                     'count': len(participants)})
