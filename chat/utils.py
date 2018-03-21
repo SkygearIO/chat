@@ -16,17 +16,18 @@ def _get_schema_name():
     return "app_%s" % skyoptions.appname
 
 
-def _get_channel_by_user_id(user_id):
+def _get_channels_by_user_ids(user_ids):
     # TODO: use database.query instead of raw SQL
     with db.conn() as conn:
         cur = conn.execute('''
             SELECT name
             FROM %(schema_name)s.user_channel
-            WHERE _owner_id = %(user_id)s
-            LIMIT 1;
+            WHERE _owner_id in %(user_ids)s
+            LIMIT %(len)s;
             ''', {
             'schema_name': AsIs(_get_schema_name()),
-            'user_id': user_id
+            'user_ids': tuple(user_ids),
+            'len': len(user_ids),
         }
         )
 
@@ -34,8 +35,7 @@ def _get_channel_by_user_id(user_id):
         for row in cur:
             results.append(row[0])
 
-        if len(results) > 0:
-            return results[0]
+        return results
 
 
 def _check_if_table_exists(tablename):

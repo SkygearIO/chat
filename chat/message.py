@@ -99,11 +99,10 @@ class Message(ChatRecord):
         result = UserConversation.\
             fetch_all_by_conversation_id(self.conversation_id)
         participants = [row['user'].recordID.key for row in result]
-        for each_participant in participants:
-            _publish_record_event(each_participant,
-                                  "message",
-                                  event_type,
-                                  self)
+        _publish_record_event(participants,
+                              "message",
+                              event_type,
+                              self)
 
     @property
     def conversation_id(self):

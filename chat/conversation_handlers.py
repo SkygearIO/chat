@@ -95,23 +95,20 @@ def notify_users(record,
                  old_participants,
                  new_participants):
 
-    for each_user in unchanged_participants:
-        _publish_record_event(each_user,
-                              "conversation",
-                              "update",
-                              record)
+    _publish_record_event(unchanged_participants,
+                          "conversation",
+                          "update",
+                          record)
 
-    for each_user in old_participants:
-        _publish_record_event(each_user,
-                              "conversation",
-                              "delete",
-                              record)
+    _publish_record_event(old_participants,
+                          "conversation",
+                          "delete",
+                          record)
 
-    for each_user in new_participants:
-        _publish_record_event(each_user,
-                              "conversation",
-                              "create",
-                              record)
+    _publish_record_event(new_participants,
+                          "conversation",
+                          "create",
+                          record)
 
 
 def handle_conversation_before_delete(record, conn):

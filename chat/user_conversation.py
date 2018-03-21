@@ -76,7 +76,8 @@ class UserConversation(ChatRecord):
         predicate = Predicate(conversation__eq=conversation_id)
         records = database.query(Query(cls.record_type,
                                        predicate=predicate,
-                                       include=["conversation", "user"]))
+                                       include=["conversation", "user"],
+                                       limit=None))
         return [UserConversation.from_record(record) for record in records]
 
     @classmethod
