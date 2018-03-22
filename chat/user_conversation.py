@@ -67,7 +67,7 @@ class UserConversation(ChatRecord):
                              offset=offset,
                              limit=page_size,
                              include=["conversation", "user"])
-                       .add_order('_created_at', order))
+                       .add_order('_updated_at', order))
         return [uc for uc in query_result]
 
     @classmethod

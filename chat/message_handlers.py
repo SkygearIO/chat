@@ -165,7 +165,7 @@ def handle_message_after_save(record, original_record, conn):
     message.notifyParticipants(event_type)
     conversation_id = message.conversation_id
     if original_record is None:
-        # Update all UserConversation unread count by 1
+        # Update all UserConversation (except sender) unread count by 1
         conn.execute('''
             UPDATE %(schema_name)s.user_conversation
             SET
@@ -179,9 +179,25 @@ def handle_message_after_save(record, original_record, conn):
             'conversation_id': conversation_id,
             'user_id': current_user_id()
         })
+        # Update all sender's UserConversation
+        conn.execute('''
+            UPDATE %(schema_name)s.user_conversation
+            SET
+                "_updated_at" = CURRENT_TIMESTAMP
+            WHERE
+                "conversation" = %(conversation_id)s
+                AND "user" = %(user_id)s
+        ''', {
+            'schema_name': AsIs(_get_schema_name()),
+            'conversation_id': conversation_id,
+            'user_id': current_user_id()
+        })
+        # Update conversation's last message
         conn.execute('''
             UPDATE %(schema_name)s.conversation
-            SET "last_message" = %(message_id)s
+            SET
+                "last_message" = %(message_id)s,
+                "_updated_at" = CURRENT_TIMESTAMP
             WHERE "_id" = %(conversation_id)s
         ''', {
             'schema_name': AsIs(_get_schema_name()),
