@@ -5,11 +5,11 @@ python: '3.5'
 cache: pip
 
 before_install:
-  - pip install --upgrade pip
-  - pip install isort
-  - pip install pylama
-  - pip install lizard
-  - pip install nose
+  - pip install --upgrade pip setuptools
+
+install:
+  - pip install -r requirements.txt
+  - pip install -r test_requirements.txt
 
 script:
   - pylama chat
