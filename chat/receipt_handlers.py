@@ -14,13 +14,21 @@ from .user_conversation import UserConversation
 from .utils import (_get_schema_name, current_context_has_master_key,
                     is_str_list)
 
+logger = logging.getLogger(__name__)
+try:
+    # Available in py-skygear v1.6
+    from skygear.utils.logging import setLoggerTag
+    setLoggerTag(logger, 'chat_plugin')
+except ImportError:
+    pass
+
 
 def handle_mark_as_delivered(message_ids: [str]):
     """
     Marking a message as delivered, which should update a receipt for the
     message.
     """
-    logging.debug(
+    logger.debug(
         'handle_mark_as_delivered: message_ids: %s',
         ','.join(message_ids)
     )
@@ -34,7 +42,7 @@ def handle_mark_as_read(message_ids: [str]):
     Since a message that is read is also delivered, both the delivered
     and read date will be updated if such value does not exist.
     """
-    logging.debug(
+    logger.debug(
         'handle_mark_as_read: message_ids: %s',
         ','.join(message_ids)
     )
