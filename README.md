@@ -243,3 +243,6 @@ def push_message_after_save_handler(record, original_record, conn):
             }
         )
 ```
+
+## Support
+For implementation related questions or technical support, please find us on the [official forum](https://discuss.skygear.io) or [community chat](https://slack.skygear.io); For bug reports or feature requests, feel free to open an issue in this repo
