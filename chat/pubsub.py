@@ -7,6 +7,8 @@ from .utils import _get_channels_by_user_ids
 
 
 def _publish_event(user_ids: [], event: str, data: dict = None) -> None:
+    if not isinstance(user_ids, list):
+        user_ids = user_ids
     if len(user_ids) == 0:
         return
     channel_names = _get_channels_by_user_ids(user_ids)

@@ -33,10 +33,9 @@ def publish_typing(conversation, evt, at):
         'at': timestamp_to_rfc3339_utcoffset(at.timestamp())
     }
     encoder = _RecordEncoder()
-    for user_id in channels:
-        _publish_event(user_id, 'typing', {
-            encoder.encode_id(conversation.id): data
-        })
+    _publish_event(channels, 'typing', {
+        encoder.encode_id(conversation.id): data
+    })
     return {'status': 'OK'}
 
 
