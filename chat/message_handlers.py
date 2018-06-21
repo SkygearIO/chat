@@ -266,6 +266,35 @@ def _update_user_conversation_last_read_message(conn, last_message,
     })
 
 
+def _update_user_conversation_unread_count(conn, deleted_message):
+    conn.execute('''
+        WITH read_receipt AS (
+            SELECT r.user AS read_user
+            FROM %(schema_name)s.receipt r
+            WHERE r.message = %(message_id)s
+            AND read_at IS NOT NULL
+        )
+        UPDATE %(schema_name)s.user_conversation
+        SET unread_count =
+        CASE WHEN
+            unread_count <= 0
+        THEN
+            0
+        ELSE
+            unread_count - 1
+        END
+        WHERE
+            "conversation" = %(conversation_id)s
+            AND "user" != %(user_id)s
+            AND "user" NOT IN (SELECT read_user FROM read_receipt)
+    ''', {
+        'schema_name': AsIs(_get_schema_name()),
+        'conversation_id': deleted_message.conversation_id,
+        'message_id': deleted_message.id.key,
+        'user_id': deleted_message.owner_id
+    })
+
+
 def delete_message(message_id):
     '''
     Delete a message
@@ -286,6 +315,7 @@ def delete_message(message_id):
                                           new_last_message_id)
         _update_user_conversation_last_read_message(conn, message,
                                                     new_last_message_id)
+        _update_user_conversation_unread_count(conn, message)
 
     serialized_conversation = serialize_record(conversation)
     participant_ids = serialized_conversation['participant_ids']
