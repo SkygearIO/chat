@@ -26,7 +26,7 @@ class Query:
         self.count = count
         self.sort = []
         self.limit = limit
-        self.offset = None
+        self.offset = offset
         self.include = include
 
     def add_order(self, key, order):
