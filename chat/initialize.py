@@ -1,9 +1,13 @@
+from psycopg2.extensions import AsIs
+
 import skygear
 from skygear.container import SkygearContainer
 from skygear.options import options as skyoptions
+from skygear.utils import db
 
 from .field import Field
 from .schema import Schema, SchemaHelper
+from .utils import _get_schema_name
 
 
 def register_initialization_event_handlers(settings):
@@ -73,3 +77,43 @@ def register_initialization_event_handlers(settings):
                               receipt_schema,
                               user_channel_schema],
                              plugin_request=True)
+
+        # Create unique constraint to _database_id in user_channel table
+        # to ensure there is only one user_channel for each user
+        with db.conn() as conn:
+            result = conn.execute("""
+                select 1
+                    FROM information_schema.constraint_column_usage
+                WHERE table_schema = '%(schema_name)s'
+                    AND table_name = 'user_channel'
+                    AND constraint_name = 'user_channel_database_id_key'
+                """, {
+                    'schema_name': AsIs(_get_schema_name())
+                })
+            first_row = result.first()
+            if first_row is None:
+                conn.execute("""
+                    DELETE
+                        FROM %(schema_name)s.user_channel
+                    WHERE _id IN (
+                        SELECT _id
+                        FROM (
+                            SELECT
+                                _id,
+                                ROW_NUMBER() OVER(
+                                    PARTITION BY
+                                    _database_id ORDER BY _created_at
+                                ) AS row_num
+                            FROM  %(schema_name)s.user_channel
+                        ) u2 WHERE u2.row_num > 1
+                    )
+                """, {
+                    'schema_name': AsIs(_get_schema_name())
+                })
+                conn.execute("""
+                    ALTER TABLE %(schema_name)s.user_channel
+                        ADD CONSTRAINT user_channel_database_id_key
+                            UNIQUE (_database_id);
+                """, {
+                    'schema_name': AsIs(_get_schema_name())
+                })
