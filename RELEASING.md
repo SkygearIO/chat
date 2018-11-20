@@ -13,9 +13,21 @@ $ brew install github-release
 $ brew install gpg2
 ```
 
-*IMPORTANT*: This guide assumes that your `origin` points to
-`skygeario/skygear-server`. Make sure you are on `master` branch and the
-branch is the same as the `origin/master`.
+### chat
+```shell
+## Draft new release changelog
+$ git log --first-parent `git describe --abbrev=0`.. > new-release
+$ edit new-release
+
+## Update changelog, version, release commit and tag
+$ make release-commit
+
+### If the release is latest (official release with the highest version number)
+$ git tag -f latest && git push git@github.com:SkygearIO/chat.git :latest
+$ git push --follow-tags git@github.com:SkygearIO/chat.git master $SKYGEAR_VERSION latest
+
+## Click `Publish release` in github release page
+```
 
 ### chat-SDK-iOS
 
