@@ -166,7 +166,6 @@ def handle_message_after_save(record, original_record, conn):
     if record.get('deleted', False):
         event_type = 'delete'
 
-    message.notifyParticipants(event_type)
     conversation_id = message.conversation_id
     if original_record is None:
         # Update all UserConversation (except sender) unread count by 1
@@ -209,6 +208,8 @@ def handle_message_after_save(record, original_record, conn):
             'message_id': record.id.key
         })
 
+    # notify participants after conversation and user_conversation updated
+    message.notifyParticipants(event_type)
     conversation = serialize_record(Conversation.fetch_one(conversation_id))
     serialized_message = __serialize_message_record(record)
     participant_ids = conversation['participant_ids']
