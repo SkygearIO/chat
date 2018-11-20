@@ -18,6 +18,16 @@ class ChatRecord(Record):
         database = self._get_database()
         database.delete([self])
 
+    def to_record(self, record):
+        record._id = self._id
+        record._owner_id = self._owner_id
+        record._acl = self._acl
+        record._created_at = self._created_at
+        record._created_by = self._created_by
+        record._updated_at = self._updated_at
+        record._updated_by = self._updated_by
+        record._data = self._data
+
     @classmethod
     def delete_all(self, records):
         database = self._get_database()

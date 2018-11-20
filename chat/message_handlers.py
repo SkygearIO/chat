@@ -150,7 +150,11 @@ def handle_message_before_save(record, original_record, conn):
 
     # TODO use proper ACL setter
     message._acl = Conversation.get_message_acl(message.conversation_id)
-    return serialize_record(message)
+
+    # py-skygear save hook use the original record refs
+    # so we need to apply all the changes from message object to record
+    message.to_record(record)
+    return record
 
 
 def handle_message_after_save(record, original_record, conn):
