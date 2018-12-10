@@ -89,7 +89,6 @@ Following is the model relation diagram.
 
 #### Overview of models responsibility are as follow.
 
-- User - Skygear provided user. Storing user attributes.
 - Conversation - represent a conversation, it store conversation information
   like title, last message, no. of participant.
 - Message - actual message display on screen, it store message text,

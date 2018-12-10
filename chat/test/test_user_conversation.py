@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import Mock, patch
 
 from skygear.encoding import deserialize_record
-from ..user import User
 from ..conversation import Conversation
 from ..user_conversation import UserConversation
 
