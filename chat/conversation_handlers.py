@@ -4,6 +4,7 @@ from psycopg2.extensions import AsIs
 
 import skygear
 from skygear.encoding import serialize_record
+from skygear.models import Record
 from skygear.utils import db
 from skygear.utils.context import current_user_id
 
@@ -19,7 +20,6 @@ from .hooks import (send_after_conversation_created_hook,
 from .message import Message
 from .pubsub import _publish_record_event
 from .roles import RolesHelper
-from .user import User
 from .user_conversation import UserConversation
 from .utils import (_get_container, _get_schema_name,
                     current_context_has_master_key)
@@ -312,12 +312,19 @@ def handle_delete_conversation_lambda(conversation_id):
 
 
 def handle_create_conversation_lambda(participants, title, meta, options):
-    try:
-        participants = [p if isinstance(p, str) else
-                        User.deserialize(p).id.key for p in participants]
-    except Exception:
-        raise InvalidArgumentException('Invalid users.', participants)
-
+    # parse participants, accept both record, _id and id
+    _participants = []
+    for p in participants:
+        if isinstance(p, Record):
+            _participants.append(p.id.key)
+        elif isinstance(p, str):
+            pid = p[5:] if p[:5] == 'user/' else p
+            _participants.append(pid)
+        else:
+            raise InvalidArgumentException(
+                'Invalid users type: ' + type(p).__name__
+            )
+    participants = _participants
     if options is None:
         options = {}
     user_id = current_user_id()
