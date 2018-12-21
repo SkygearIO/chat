@@ -29,6 +29,27 @@ $ git push --follow-tags git@github.com:SkygearIO/chat.git master $SKYGEAR_VERSI
 ## Click `Publish release` in github release page
 ```
 
+### chat-SDK-JS
+
+```shell
+## Draft new release notes
+$ git log --first-parent `git describe --abbrev=0`.. > new-release
+$ edit new-release
+
+## Update changelog, version, release commit and tag
+$ make release-commit
+
+### If the release is latest (official release with the highest version number)
+$ git tag -f latest && git push git@github.com:SkygearIO/chat-SDK-JS.git :latest
+$ git push --follow-tags git@github.com:SkygearIO/chat-SDK-JS.git master $SKYGEAR_VERSION latest
+
+## Release to npm (Only for official release)
+$ npm publish
+
+## Click `Publish release` in github release page
+```
+
+
 ### chat-SDK-iOS
 
 **IMPORTANT**: Note that CocoaPods does not allow tag prefixed with `v`.
