@@ -1,3 +1,9 @@
+## 1.7.0 (2019-01-25)
+
+### Bug Fixes
+
+- Create conversation by user record and id #236
+
 ## 1.6.3 (2018-11-20)
 
 ### Bug Fixes

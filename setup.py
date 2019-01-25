@@ -32,7 +32,7 @@ class PyTest(TestCommand):
 
 setup(
       name='skygear_chat',
-      version='1.6.3',
+      version='1.7.0',
       packages=find_packages(),
       description='Chat Plugin for Skygear',
       long_description=open(README).read(),
